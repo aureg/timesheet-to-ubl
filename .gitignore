@@ -1,1 +1,22 @@
+# Binaries
+bin/
+*.exe
+ublcli
+
+# Output directory
 /dist/
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
+*.test
+*.prof
