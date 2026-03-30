@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{.InvoiceNumber}}</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; padding: 40px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 60px; }
+        .supplier-info { font-size: 0.9em; }
+        .customer-info { margin-bottom: 40px; }
+        .customer-info h2 { font-size: 1.1em; color: #777; margin-bottom: 5px; }
+        .customer-info div { font-size: 1.2em; font-weight: bold; }
+        .invoice-details { margin-bottom: 40px; display: flex; gap: 40px; }
+        .invoice-details div { display: flex; flex-direction: column; }
+        .invoice-details span.label { font-size: 0.8em; color: #999; text-transform: uppercase; }
+        .invoice-details span.value { font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+        th { text-align: left; border-bottom: 2px solid #eee; padding: 10px; font-size: 0.9em; color: #777; }
+        td { padding: 15px 10px; border-bottom: 1px solid #eee; }
+        .col-hours, .col-rate, .col-total { text-align: right; }
+        .totals { margin-left: auto; width: 300px; }
+        .total-line { display: flex; justify-content: space-between; padding: 5px 0; }
+        .total-line.grand-total { border-top: 2px solid #333; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 1.2em; }
+        .footer { margin-top: 100px; font-size: 0.8em; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
+        @media print {
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="supplier-info">
+            <strong>{{.Supplier.Name}}</strong><br>
+            {{.Supplier.Address.Street}}<br>
+            {{.Supplier.Address.PostalCode}} {{.Supplier.Address.City}}, {{.Supplier.Address.Country}}<br>
+            {{.Supplier.Email}} | {{.Supplier.Phone}}
+        </div>
+        <div class="logo">
+            <h1 style="margin: 0; color: #205;">FACTURE</h1>
+        </div>
+    </div>
+
+    <div class="customer-info">
+        <h2>Facturé à</h2>
+        <div>{{.Customer.Name}}</div>
+        {{.Customer.Address.Street}}<br>
+        {{.Customer.Address.PostalCode}} {{.Customer.Address.City}}, {{.Customer.Address.Country}}
+    </div>
+
+    <div class="invoice-details">
+        <div>
+            <span class="label">N° Facture</span>
+            <span class="value">{{.InvoiceNumber}}</span>
+        </div>
+        <div>
+            <span class="label">Date d'émission</span>
+            <span class="value">{{.InvoiceDate}}</span>
+        </div>
+        <div>
+            <span class="label">Échéance</span>
+            <span class="value">{{.DueDate}}</span>
+        </div>
+        <div>
+            <span class="label">Période</span>
+            <span class="value">{{.PeriodStart}} au {{.PeriodEnd}}</span>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="col-hours">Heures</th>
+                <th class="col-rate">Taux</th>
+                <th class="col-total">Total HT</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Lines}}
+            <tr>
+                <td>{{.Description}} ({{.ProjectCode}})</td>
+                <td class="col-hours">{{printf "%.2f" .Hours}}</td>
+                <td class="col-rate">{{printf "%.2f" .HourlyRate}} {{$.Currency}}</td>
+                <td class="col-total">{{printf "%.2f" .NetAmount}} {{$.Currency}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="total-line">
+            <span>Total Heures</span>
+            <span>{{.TotalHours}} h</span>
+        </div>
+        <div class="total-line">
+            <span>Sous-total HT</span>
+            <span>{{.Subtotal}} {{.Currency}}</span>
+        </div>
+        <div class="total-line">
+            <span>TVA (21%)</span>
+            <span>{{.VATAmount}} {{.Currency}}</span>
+        </div>
+        <div class="total-line grand-total">
+            <span>TOTAL TTC</span>
+            <span>{{.TotalAmount}} {{.Currency}}</span>
+        </div>
+    </div>
+
+    <div class="footer">
+        Informations de paiement : IBAN {{.Supplier.IBAN}} | BIC {{.Supplier.BIC}}<br>
+        Numéro d'entreprise : {{.Supplier.CompanyID}}
+    </div>
+</body>
+</html>
