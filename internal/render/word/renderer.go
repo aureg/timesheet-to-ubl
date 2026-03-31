@@ -31,21 +31,22 @@ func (r *Renderer) Render(invoice *domain.Invoice, outputPath string) error {
 
 	// Prepare data
 	data := map[string]string{
-		"InvoiceNumber":  invoice.Number,
-		"InvoiceDate":    invoice.IssueDate.Format("02/01/2006"),
-		"DueDate":        invoice.DueDate.Format("02/01/2006"),
-		"ClientName":     invoice.Customer.Name,
-		"PeriodStart":    invoice.Period.Start.Format("02/01/2006"),
-		"PeriodEnd":      invoice.Period.End.Format("02/01/2006"),
-		"TotalHours":     fmt.Sprintf("%.2f", invoice.TotalHours),
-		"Subtotal":       fmt.Sprintf("%.2f", invoice.Subtotal),
-		"VATAmount":      fmt.Sprintf("%.2f", invoice.VATAmount),
-		"TotalAmount":    fmt.Sprintf("%.2f", invoice.TotalAmount),
-		"Currency":       invoice.Currency,
-		"SupplierName":   invoice.Supplier.Name,
-		"CustomerName":   invoice.Customer.Name,
-		"OrderReference": invoice.OrderReference,
-		"Now":            time.Now().Format("02/01/2006 15:04"),
+		"InvoiceNumber":           invoice.Number,
+		"InvoiceDate":             invoice.IssueDate.Format("02/01/2006"),
+		"DueDate":                 invoice.DueDate.Format("02/01/2006"),
+		"ClientName":              invoice.Customer.Name,
+		"PeriodStart":             invoice.Period.Start.Format("02/01/2006"),
+		"PeriodEnd":               invoice.Period.End.Format("02/01/2006"),
+		"TotalHours":              fmt.Sprintf("%.2f", invoice.TotalHours),
+		"Subtotal":                fmt.Sprintf("%.2f", invoice.Subtotal),
+		"VATAmount":               fmt.Sprintf("%.2f", invoice.VATAmount),
+		"TotalAmount":             fmt.Sprintf("%.2f", invoice.TotalAmount),
+		"Currency":                invoice.Currency,
+		"SupplierName":            invoice.Supplier.Name,
+		"CustomerName":            invoice.Customer.Name,
+		"OrderReference":          invoice.OrderReference,
+		"StructuredCommunication": invoice.StructuredCommunication,
+		"Now":                     time.Now().Format("02/01/2006 15:04"),
 	}
 
 	// Simple replacements

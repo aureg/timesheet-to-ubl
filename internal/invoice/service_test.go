@@ -46,9 +46,20 @@ func TestCalculate(t *testing.T) {
 	}
 
 	svc := NewService()
-	inv, err := svc.Calculate(entries, cfg)
+	inv, err := svc.Calculate(entries, cfg, "0001")
 	if err != nil {
 		t.Fatalf("Calculate failed: %v", err)
+	}
+
+	if inv.Number != "0001" {
+		t.Errorf("Expected number 0001, got %s", inv.Number)
+	}
+
+	// 2023 0001 00 -> 2023000100 % 97 = 2023000100 - (97 * 20855671) = 2023000100 - 2023000087 = 13
+	// VCS: +++2023/0001/0013+++
+	expectedVCS := "+++2023/0001/0013+++"
+	if inv.StructuredCommunication != expectedVCS {
+		t.Errorf("Expected VCS %s, got %s", expectedVCS, inv.StructuredCommunication)
 	}
 
 	if inv.TotalHours != 10.0 {
@@ -113,7 +124,7 @@ func TestCalculate_MultipleClientsNoError(t *testing.T) {
 	}
 
 	svc := NewService()
-	inv, err := svc.Calculate(entries, cfg)
+	inv, err := svc.Calculate(entries, cfg, "0001")
 	if err != nil {
 		t.Fatalf("Expected no error for multiple clients from excel, got %v", err)
 	}

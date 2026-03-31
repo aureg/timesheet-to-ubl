@@ -15,7 +15,7 @@ func NewService() *Service {
 	return &Service{}
 }
 
-func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.BillingConfig) (*domain.Invoice, error) {
+func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.BillingConfig, invoiceNumber string) (*domain.Invoice, error) {
 	if len(entries) == 0 {
 		return nil, fmt.Errorf("no timesheet entries provided")
 	}
@@ -47,7 +47,7 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 	periodEnd := time.Date(maxDate.Year(), maxDate.Month()+1, 0, 0, 0, 0, 0, maxDate.Location())
 
 	invoice := &domain.Invoice{
-		Number:    fmt.Sprintf("INV-%s", time.Now().Format("20060102-150405")), // Default number
+		Number:    invoiceNumber,
 		IssueDate: maxDate,
 		Period: domain.Period{
 			Start: periodStart,
@@ -55,6 +55,20 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 		},
 		Currency: cfg.Default.Currency,
 	}
+
+	// Calculate Belgian Structured Communication (VCS)
+	// Format: Year (4 digits) + Invoice Number (4 digits) + "00" + Checksum (2 digits)
+	// Example: 2026 0001 00 27
+	year := maxDate.Year()
+	baseStr := fmt.Sprintf("%04d%s00", year, invoiceNumber)
+	// Calculate checksum: base % 97. If 0, checksum is 97.
+	var baseInt int64
+	fmt.Sscanf(baseStr, "%d", &baseInt)
+	checksum := baseInt % 97
+	if checksum == 0 {
+		checksum = 97
+	}
+	invoice.StructuredCommunication = fmt.Sprintf("+++%04d/%s/00%02d+++", year, invoiceNumber, checksum)
 
 	// Calculate total days (8 hours per day)
 	totalDays := totalHours / 8.0
@@ -124,6 +138,8 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 	invoice.Currency = res.Currency
 	invoice.DueDate = maxDate.AddDate(0, 0, res.PaymentTermsDays)
 	invoice.OrderReference = res.OrderReference
+	invoice.InvoiceTemplate = res.InvoiceTemplate
+	invoice.OutputDir = res.OutputDir
 
 	return invoice, nil
 }

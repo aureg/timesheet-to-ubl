@@ -104,6 +104,7 @@ type Contact struct {
 
 type PaymentMeans struct {
 	PaymentMeansCode      string           `xml:"cbc:PaymentMeansCode"`
+	PaymentID             string           `xml:"cbc:PaymentID,omitempty"`
 	PayeeFinancialAccount FinancialAccount `xml:"cac:PayeeFinancialAccount"`
 }
 
@@ -290,6 +291,7 @@ func Generate(inv *domain.Invoice, outputPath string) error {
 		},
 		PaymentMeans: PaymentMeans{
 			PaymentMeansCode: "30",
+			PaymentID:        inv.StructuredCommunication,
 			PayeeFinancialAccount: FinancialAccount{
 				ID: inv.Supplier.IBAN,
 			},

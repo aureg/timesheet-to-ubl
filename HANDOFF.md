@@ -30,6 +30,24 @@ Le projet suit une architecture modulaire et testable :
 - `internal/tui` : Interface utilisateur interactive (Bubble Tea).
 
 ## Environnement de développement
+
+### Configuration par défaut et Résolution :
+
+L'application cherche automatiquement son fichier de configuration dans :
+`%userHome%/.timesheet2ubl/config.yaml` (Windows) ou `~/.timesheet2ubl/config.yaml` (Linux/macOS).
+Si ce fichier existe, il est utilisé par défaut en CLI (si `--config` n'est pas fourni) et pré-rempli dans la TUI.
+
+**Résolution du Template :**
+L'outil résout le template d'une facture selon cet ordre de priorité :
+
+1. Option `--template` passée en ligne de commande.
+2. Valeur `invoice_template` définie pour le client dans la configuration YAML.
+3. Valeur `invoice_template` définie dans la section `default` de la configuration YAML.
+4. Fichier `invoice.html` ou `invoice.docx` présent dans `%userHome%/.timesheet2ubl/`.
+
+Si un nom sans extension est fourni (ex: `my-template`), l'outil cherchera `my-template.html` puis `my-template.docx`
+dans le dossier utilisateur `.timesheet2ubl/` puis dans le dossier courant.
+
 ### Prérequis :
 - **Go 1.26** ou supérieur.
 - **LibreOffice** : Installé dans `C:\Program Files\LibreOffice` (nécessaire pour la conversion Excel/Word -> PDF).
@@ -54,15 +72,22 @@ Le projet suit une architecture modulaire et testable :
    ```
 3. **Exécution CLI** :
    ```powershell
-   # Avec template HTML
-   .\ublcli.exe generate --excel data.xlsx --config billing.yaml --template invoice.html --out ./dist
-   # Avec template Word
-   .\ublcli.exe generate --excel data.xlsx --config billing.yaml --template invoice.docx --out ./dist
+   # Utilisation avec template automatique (config ou dossier par défaut)
+   .\ublcli.exe generate --excel data.xlsx --number 0001
+   
+   # Spécification d'un template précis
+   .\ublcli.exe generate --excel data.xlsx --number 0001 --template my-invoice.docx
+   
+   # Utilisation d'un nom de template court (cherche .html/.docx dans .timesheet2ubl)
+   .\ublcli.exe generate --excel data.xlsx --number 0001 --template invoice-anorys
    ```
 4. **Exécution TUI** :
    ```powershell
    .\ublcli.exe
    ```
+
+6. **Configuration par défaut** :
+   L'application utilise `%userHome%/.timesheet2ubl/config.yaml` si aucun flag `--config` n'est spécifié.
 
 ## Documentation des Templates
 
@@ -73,21 +98,22 @@ différemment selon le format.
 
 Ces valeurs sont disponibles sous forme de chaînes de caractères formatées :
 
-| Placeholder          | Description                       | Format / Exemple   |
-|:---------------------|:----------------------------------|:-------------------|
-| `{{InvoiceNumber}}`  | Numéro de la facture              | `2026-001`         |
-| `{{InvoiceDate}}`    | Date d'émission                   | `31/03/2026`       |
-| `{{DueDate}}`        | Date d'échéance                   | `30/04/2026`       |
-| `{{PeriodStart}}`    | Début de la période de prestation | `01/03/2026`       |
-| `{{PeriodEnd}}`      | Fin de la période de prestation   | `31/03/2026`       |
-| `{{ClientName}}`     | Nom du client (config)            | `Nom du Client`    |
-| `{{TotalHours}}`     | Somme totale des heures           | `145.50`           |
-| `{{Subtotal}}`       | Montant total HT                  | `9457.50`          |
-| `{{VATAmount}}`      | Montant total de la TVA           | `1986.08`          |
-| `{{TotalAmount}}`    | Montant total TTC                 | `11443.58`         |
-| `{{Currency}}`       | Devise utilisée                   | `EUR`              |
-| `{{OrderReference}}` | Numéro de bon de commande (PO)    | `PO-12345`         |
-| `{{Now}}`            | Date et heure de génération       | `31/03/2026 11:45` |
+| Placeholder                   | Description                       | Format / Exemple       |
+|:------------------------------|:----------------------------------|:-----------------------|
+| `{{InvoiceNumber}}`           | Numéro de la facture              | `2026-001`             |
+| `{{InvoiceDate}}`             | Date d'émission                   | `31/03/2026`           |
+| `{{DueDate}}`                 | Date d'échéance                   | `30/04/2026`           |
+| `{{PeriodStart}}`             | Début de la période de prestation | `01/03/2026`           |
+| `{{PeriodEnd}}`               | Fin de la période de prestation   | `31/03/2026`           |
+| `{{ClientName}}`              | Nom du client (config)            | `Nom du Client`        |
+| `{{TotalHours}}`              | Somme totale des heures           | `145.50`               |
+| `{{Subtotal}}`                | Montant total HT                  | `9457.50`              |
+| `{{VATAmount}}`               | Montant total de la TVA           | `1986.08`              |
+| `{{TotalAmount}}`             | Montant total TTC                 | `11443.58`             |
+| `{{Currency}}`                | Devise utilisée                   | `EUR`                  |
+| `{{OrderReference}}`          | Numéro de bon de commande (PO)    | `PO-12345`             |
+| `{{StructuredCommunication}}` | Communication structurée belge    | `+++2026/0001/0027+++` |
+| `{{Now}}`                     | Date et heure de génération       | `31/03/2026 11:45`     |
 
 ### Spécificités du Template HTML (Go `html/template`)
 

@@ -45,10 +45,11 @@ func TestGenerate(t *testing.T) {
 				GrossAmount: 1210.0,
 			},
 		},
-		Subtotal:       1000.0,
-		VATAmount:      210.0,
-		TotalAmount:    1210.0,
-		OrderReference: "PO-456",
+		Subtotal:                1000.0,
+		VATAmount:               210.0,
+		TotalAmount:             1210.0,
+		OrderReference:          "PO-456",
+		StructuredCommunication: "+++2023/0001/0013+++",
 		Attachments: []domain.Attachment{
 			{Filename: "test.pdf", MimeType: "application/pdf", Content: []byte("fake")},
 			{Filename: "timesheet.pdf", MimeType: "application/pdf", Content: []byte("fake2")},
@@ -121,6 +122,11 @@ func TestGenerate(t *testing.T) {
 	// Check OrderReference
 	if !contains(xmlStr, "<cac:OrderReference>") || !contains(xmlStr, "<cbc:ID>PO-456</cbc:ID>") {
 		t.Errorf("XML missing OrderReference. Got: %s", xmlStr)
+	}
+
+	// Check StructuredCommunication (PaymentID)
+	if !contains(xmlStr, "<cbc:PaymentID>+++2023/0001/0013+++</cbc:PaymentID>") {
+		t.Errorf("XML missing PaymentID (StructuredCommunication). Got: %s", xmlStr)
 	}
 }
 

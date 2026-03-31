@@ -3,9 +3,18 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
+
+func GetDefaultConfigPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("could not get home directory: %w", err)
+	}
+	return filepath.Join(home, ".timesheet2ubl", "config.yaml"), nil
+}
 
 type AddressConfig struct {
 	Street     string `yaml:"street"`
@@ -36,6 +45,8 @@ type DefaultConfig struct {
 	HourlyRate       float64        `yaml:"hourly_rate"`
 	PaymentTermsDays int            `yaml:"payment_terms_days"`
 	Supplier         SupplierConfig `yaml:"supplier"`
+	InvoiceTemplate  string         `yaml:"invoice_template"`
+	OutputDir        string         `yaml:"output_dir"`
 }
 
 type ClientConfig struct {
@@ -43,6 +54,8 @@ type ClientConfig struct {
 	VATPercent       *float64       `yaml:"vat_percent"`
 	PaymentTermsDays *int           `yaml:"payment_terms_days"`
 	OrderReference   string         `yaml:"order_reference"`
+	InvoiceTemplate  string         `yaml:"invoice_template"`
+	OutputDir        string         `yaml:"output_dir"`
 }
 
 type ProjectConfig struct {
@@ -80,6 +93,8 @@ type ResolvedConfig struct {
 	Supplier         SupplierConfig
 	Customer         CustomerConfig
 	OrderReference   string
+	InvoiceTemplate  string
+	OutputDir        string
 }
 
 func (c *BillingConfig) GetDefaultClientName() string {
@@ -98,6 +113,8 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 		PaymentTermsDays: c.Default.PaymentTermsDays,
 		Currency:         c.Default.Currency,
 		Supplier:         c.Default.Supplier,
+		InvoiceTemplate:  c.Default.InvoiceTemplate,
+		OutputDir:        c.Default.OutputDir,
 	}
 
 	// 1. Client + Project (Nom Client::CODEPROJET)
@@ -123,6 +140,12 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 		if cl.OrderReference != "" {
 			res.OrderReference = cl.OrderReference
 		}
+		if cl.InvoiceTemplate != "" {
+			res.InvoiceTemplate = cl.InvoiceTemplate
+		}
+		if cl.OutputDir != "" {
+			res.OutputDir = cl.OutputDir
+		}
 	}
 
 	// 3. Project
@@ -140,4 +163,57 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 	}
 
 	return res
+}
+
+func ResolveTemplatePath(templateName string, resolvedTemplate string) string {
+	// If templateName is provided via CLI, it takes priority
+	path := templateName
+	if path == "" {
+		path = resolvedTemplate
+	}
+
+	// If still empty, search in .timesheet2ubl
+	if path == "" {
+		home, _ := os.UserHomeDir()
+		baseDir := filepath.Join(home, ".timesheet2ubl")
+
+		// Try default names if nothing is specified
+		for _, name := range []string{"invoice.html", "invoice.docx"} {
+			p := filepath.Join(baseDir, name)
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
+		return ""
+	}
+
+	// If path has an extension and exists, return it
+	if filepath.Ext(path) != "" {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+		// If it doesn't exist as is, check in .timesheet2ubl
+		home, _ := os.UserHomeDir()
+		p := filepath.Join(home, ".timesheet2ubl", path)
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+		return path // Return original if not found in home
+	}
+
+	// If no extension, search for .html or .docx in .timesheet2ubl
+	home, _ := os.UserHomeDir()
+	baseDir := filepath.Join(home, ".timesheet2ubl")
+	for _, ext := range []string{".html", ".docx"} {
+		p := filepath.Join(baseDir, templateName+ext)
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+		// Also try current directory
+		if _, err := os.Stat(templateName + ext); err == nil {
+			return templateName + ext
+		}
+	}
+
+	return path
 }
