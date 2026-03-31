@@ -42,8 +42,8 @@ type TimesheetEntry struct {
 type InvoiceLine struct {
 	ProjectCode string
 	Description string
-	Hours       float64
-	HourlyRate  float64
+	Quantity    float64
+	UnitPrice   float64
 	TaxPercent  float64
 	NetAmount   float64
 	TaxAmount   float64

@@ -70,17 +70,17 @@
         <thead>
             <tr>
                 <th>Description</th>
-                <th class="col-hours">Heures</th>
-                <th class="col-rate">Taux</th>
+                <th class="col-hours">Jours</th>
+                <th class="col-rate">Taux journalier</th>
                 <th class="col-total">Total HT</th>
             </tr>
         </thead>
         <tbody>
             {{range .Lines}}
             <tr>
-                <td>{{.Description}} ({{.ProjectCode}})</td>
-                <td class="col-hours">{{printf "%.2f" .Hours}}</td>
-                <td class="col-rate">{{printf "%.2f" .HourlyRate}} {{$.Currency}}</td>
+                <td>{{.Description}}</td>
+                <td class="col-hours">{{printf "%.2f" .Quantity}}</td>
+                <td class="col-rate">{{printf "%.2f" .UnitPrice}} {{$.Currency}}</td>
                 <td class="col-total">{{printf "%.2f" .NetAmount}} {{$.Currency}}</td>
             </tr>
             {{end}}
@@ -89,8 +89,8 @@
 
     <div class="totals">
         <div class="total-line">
-            <span>Total Heures</span>
-            <span>{{.TotalHours}} h</span>
+            <span>Total Jours</span>
+            <span>{{printf "%.2f" .TotalHours}} j</span>
         </div>
         <div class="total-line">
             <span>Sous-total HT</span>

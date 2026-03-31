@@ -214,14 +214,14 @@ func Generate(inv *domain.Invoice, outputPath string) error {
 	for i, line := range inv.Lines {
 		ublInv.InvoiceLines = append(ublInv.InvoiceLines, InvoiceLine{
 			ID:                  fmt.Sprintf("%d", i+1),
-			InvoicedQuantity:    Quantity{Value: fmt.Sprintf("%.2f", line.Hours), UnitCode: "HUR"},
+			InvoicedQuantity:    Quantity{Value: fmt.Sprintf("%.2f", line.Quantity), UnitCode: "DAY"},
 			LineExtensionAmount: Money{Value: fmt.Sprintf("%.2f", line.NetAmount), CurrencyID: inv.Currency},
 			Item: Item{
 				Description: line.Description,
 				Name:        line.ProjectCode,
 			},
 			Price: Price{
-				PriceAmount: Money{Value: fmt.Sprintf("%.2f", line.HourlyRate), CurrencyID: inv.Currency},
+				PriceAmount: Money{Value: fmt.Sprintf("%.2f", line.UnitPrice), CurrencyID: inv.Currency},
 			},
 		})
 	}

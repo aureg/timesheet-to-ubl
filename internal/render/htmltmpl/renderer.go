@@ -38,7 +38,7 @@ func (r *Renderer) Render(invoice *domain.Invoice, outputPath string) error {
 		"PeriodStart":   invoice.Period.Start.Format("02/01/2006"),
 		"PeriodEnd":     invoice.Period.End.Format("02/01/2006"),
 		"Lines":         invoice.Lines,
-		"TotalHours":    fmt.Sprintf("%.2f", invoice.TotalHours),
+		"TotalHours":    fmt.Sprintf("%.2f", invoice.TotalHours/8.0),
 		"Subtotal":      fmt.Sprintf("%.2f", invoice.Subtotal),
 		"VATAmount":     fmt.Sprintf("%.2f", invoice.VATAmount),
 		"TotalAmount":   fmt.Sprintf("%.2f", invoice.TotalAmount),

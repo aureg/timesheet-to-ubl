@@ -54,20 +54,28 @@ func TestCalculate(t *testing.T) {
 		t.Errorf("Expected 10 hours, got %f", inv.TotalHours)
 	}
 
-	if len(inv.Lines) != 2 {
-		t.Errorf("Expected 2 lines, got %d", len(inv.Lines))
+	if len(inv.Lines) != 1 {
+		t.Errorf("Expected 1 line, got %d", len(inv.Lines))
 	}
 
-	if inv.Subtotal != 1000.0 { // 10 * 100
-		t.Errorf("Expected 1000 subtotal, got %f", inv.Subtotal)
+	expectedDays := 10.0 / 8.0
+	if inv.Lines[0].Quantity != expectedDays {
+		t.Errorf("Expected %f days, got %f", expectedDays, inv.Lines[0].Quantity)
 	}
 
-	if inv.VATAmount != 210.0 { // 1000 * 0.21
-		t.Errorf("Expected 210 VAT, got %f", inv.VATAmount)
+	expectedSubtotal := expectedDays * 100.0
+	if inv.Subtotal != expectedSubtotal {
+		t.Errorf("Expected %f subtotal, got %f", expectedSubtotal, inv.Subtotal)
 	}
 
-	if inv.TotalAmount != 1210.0 {
-		t.Errorf("Expected 1210 total, got %f", inv.TotalAmount)
+	expectedVAT := expectedSubtotal * 0.21
+	if inv.VATAmount != expectedVAT {
+		t.Errorf("Expected %f VAT, got %f", expectedVAT, inv.VATAmount)
+	}
+
+	expectedTotal := expectedSubtotal + expectedVAT
+	if inv.TotalAmount != expectedTotal {
+		t.Errorf("Expected %f total, got %f", expectedTotal, inv.TotalAmount)
 	}
 
 	expectedStart := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
