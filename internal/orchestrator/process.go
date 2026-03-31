@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"ublcli/internal/config"
 	"ublcli/internal/domain"
@@ -11,6 +12,7 @@ import (
 	"ublcli/internal/invoice"
 	"ublcli/internal/pdf"
 	"ublcli/internal/render/htmltmpl"
+	"ublcli/internal/render/word"
 	"ublcli/internal/ubl"
 )
 
@@ -48,31 +50,75 @@ func Process(opts GenerateOptions) error {
 		return fmt.Errorf("creating output dir: %w", err)
 	}
 
-	// 4. Render HTML
-	htmlPath := filepath.Join(opts.OutputDir, "invoice.html")
-	renderer := htmltmpl.NewRenderer(opts.TemplatePath)
-	if err := renderer.Render(inv, htmlPath); err != nil {
-		return fmt.Errorf("rendering html: %w", err)
-	}
-
-	// 5. Convert PDF
+	// 4. Render Invoice (HTML or Word)
+	isWord := strings.ToLower(filepath.Ext(opts.TemplatePath)) == ".docx"
 	pdfPath := filepath.Join(opts.OutputDir, "invoice.pdf")
-	pdfRenderer := pdf.NewChromeRenderer()
-
-	absHtmlPath, _ := filepath.Abs(htmlPath)
 	absPdfPath, _ := filepath.Abs(pdfPath)
 
-	if err := pdfRenderer.Convert(absHtmlPath, absPdfPath); err != nil {
-		fmt.Printf("Warning: PDF conversion failed: %v\n", err)
+	if isWord {
+		// Word flow
+		docxPath := filepath.Join(opts.OutputDir, "invoice_filled.docx")
+		wordRenderer := word.NewRenderer(opts.TemplatePath)
+		if err := wordRenderer.Render(inv, docxPath); err != nil {
+			return fmt.Errorf("rendering word: %w", err)
+		}
+
+		// Convert docx to pdf using LibreOffice
+		lo := pdf.NewLibreOfficeRenderer()
+		absDocxPath, _ := filepath.Abs(docxPath)
+		if err := lo.Convert(absDocxPath, opts.OutputDir); err != nil {
+			fmt.Printf("Warning: Word to PDF conversion failed (LibreOffice): %v\n", err)
+		} else {
+			// Find the produced PDF
+			producedPath := filepath.Join(opts.OutputDir, "invoice_filled.pdf")
+			// Rename it to invoice.pdf
+			if err := os.Rename(producedPath, pdfPath); err != nil {
+				fmt.Printf("Warning: Failed to rename word-produced PDF: %v\n", err)
+			}
+		}
 	} else {
-		// 6. Attach PDF to Invoice
-		pdfContent, err := os.ReadFile(pdfPath)
-		if err == nil {
+		// HTML flow
+		htmlPath := filepath.Join(opts.OutputDir, "invoice.html")
+		renderer := htmltmpl.NewRenderer(opts.TemplatePath)
+		if err := renderer.Render(inv, htmlPath); err != nil {
+			return fmt.Errorf("rendering html: %w", err)
+		}
+
+		// Convert HTML to PDF using Chrome
+		pdfRenderer := pdf.NewChromeRenderer()
+		absHtmlPath, _ := filepath.Abs(htmlPath)
+		if err := pdfRenderer.Convert(absHtmlPath, absPdfPath); err != nil {
+			fmt.Printf("Warning: Invoice PDF conversion failed: %v\n", err)
+		}
+	}
+
+	// 5. Attach Invoice PDF
+	if data, err := os.ReadFile(pdfPath); err == nil {
+		inv.Attachments = append(inv.Attachments, domain.Attachment{
+			Filename: "invoice.pdf",
+			MimeType: "application/pdf",
+			Content:  data,
+		})
+	}
+
+	// 6b. Attach original Excel as PDF using LibreOffice (soffice)
+	absExcelPath, _ := filepath.Abs(opts.ExcelPath)
+	lo := pdf.NewLibreOfficeRenderer()
+	if err := lo.Convert(absExcelPath, opts.OutputDir); err != nil {
+		fmt.Printf("Warning: Excel to PDF conversion failed (LibreOffice): %v\n", err)
+	} else {
+		// LibreOffice outputs <basename>.pdf in the output dir
+		base := filepath.Base(absExcelPath)
+		producedName := strings.TrimSuffix(base, filepath.Ext(base)) + ".pdf"
+		producedPath := filepath.Join(opts.OutputDir, producedName)
+		if data, err := os.ReadFile(producedPath); err == nil {
 			inv.Attachments = append(inv.Attachments, domain.Attachment{
-				Filename: "invoice.pdf",
+				Filename: "timesheet.pdf",
 				MimeType: "application/pdf",
-				Content:  pdfContent,
+				Content:  data,
 			})
+		} else {
+			fmt.Printf("Warning: Could not read produced timesheet PDF: %v\n", err)
 		}
 	}
 

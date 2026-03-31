@@ -42,6 +42,7 @@ type ClientConfig struct {
 	Customer         CustomerConfig `yaml:"customer"`
 	VATPercent       *float64       `yaml:"vat_percent"`
 	PaymentTermsDays *int           `yaml:"payment_terms_days"`
+	OrderReference   string         `yaml:"order_reference"`
 }
 
 type ProjectConfig struct {
@@ -78,6 +79,7 @@ type ResolvedConfig struct {
 	Currency         string
 	Supplier         SupplierConfig
 	Customer         CustomerConfig
+	OrderReference   string
 }
 
 func (c *BillingConfig) GetDefaultClientName() string {
@@ -117,6 +119,9 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 		}
 		if cl.PaymentTermsDays != nil {
 			res.PaymentTermsDays = *cl.PaymentTermsDays
+		}
+		if cl.OrderReference != "" {
+			res.OrderReference = cl.OrderReference
 		}
 	}
 

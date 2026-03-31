@@ -42,7 +42,7 @@ func handleGenerate() {
 	fs.StringVar(&opts.ExcelPath, "excel", "", "Path to Excel file")
 	fs.StringVar(&opts.SheetName, "sheet", "Data", "Excel sheet name")
 	fs.StringVar(&opts.ConfigPath, "config", "", "Path to YAML config file")
-	fs.StringVar(&opts.TemplatePath, "template", "", "Path to HTML template")
+	fs.StringVar(&opts.TemplatePath, "template", "", "Path to HTML or Word (.docx) template")
 	fs.StringVar(&opts.OutputDir, "out", "./dist", "Output directory")
 
 	fs.Parse(os.Args[2:])

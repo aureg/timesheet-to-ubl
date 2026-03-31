@@ -4,111 +4,245 @@
     <meta charset="UTF-8">
     <title>Facture {{.InvoiceNumber}}</title>
     <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; padding: 40px; }
-        .header { display: flex; justify-content: space-between; margin-bottom: 60px; }
-        .supplier-info { font-size: 0.9em; }
-        .customer-info { margin-bottom: 40px; }
-        .customer-info h2 { font-size: 1.1em; color: #777; margin-bottom: 5px; }
-        .customer-info div { font-size: 1.2em; font-weight: bold; }
-        .invoice-details { margin-bottom: 40px; display: flex; gap: 40px; }
-        .invoice-details div { display: flex; flex-direction: column; }
-        .invoice-details span.label { font-size: 0.8em; color: #999; text-transform: uppercase; }
-        .invoice-details span.value { font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-        th { text-align: left; border-bottom: 2px solid #eee; padding: 10px; font-size: 0.9em; color: #777; }
-        td { padding: 15px 10px; border-bottom: 1px solid #eee; }
-        .col-hours, .col-rate, .col-total { text-align: right; }
-        .totals { margin-left: auto; width: 300px; }
-        .total-line { display: flex; justify-content: space-between; padding: 5px 0; }
-        .total-line.grand-total { border-top: 2px solid #333; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 1.2em; }
-        .footer { margin-top: 100px; font-size: 0.8em; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
-        @media print {
-            body { padding: 0; }
+        body {
+            font-family: Tahoma, serif;
+            font-size: 10px;
         }
+
+        h1 {
+            color: #4901C8;
+            float: right;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+        }
+
+        #info div {
+            width: 50%;
+            border-bottom: 1px solid #eeeeee;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            float: right;
+            text-align: right;
+            clear: both;
+        }
+
+        #info .title {
+            display: inline-block;
+            float: left;
+        }
+
+        #contact {
+            clear: both;
+            padding-top: 50px;
+        }
+
+        #supplier {
+            float: left;
+            width: 50%;
+        }
+
+        #customer {
+            float: left;
+            width: 50%;
+        }
+
+        #supplier .name, #customer .name {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #4901C8;
+        }
+
+        #items {
+            clear: both;
+            padding-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            border-collapse: collapse;
+            font-weight: bold;
+            color: #4901C8;
+            text-transform: uppercase;
+            text-align: left;
+            border-top: 1px solid #4901C8;
+            border-bottom: 1px solid #4901C8;
+            padding: 10px;
+        }
+
+        td {
+            border-collapse: collapse;
+            padding: 15px 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:last-child td {
+            border-bottom: 1px solid #4901C8;
+        }
+
+        .col-desc {
+            width: 50%;
+        }
+
+        .col-rate {
+            width: 15%;
+        }
+
+        .col-hours, .col-vat {
+            width: 10%;
+        }
+
+        .col-total {
+            width: 15%;
+        }
+
+        .col-hours, .col-vat, .col-rate, .col-total {
+            text-align: right;
+            border-left: 1px solid #eee;
+        }
+
+        #totals {
+            width: 35%;
+            float: right;
+            border-bottom: 1px solid #4901C8;
+        }
+
+        #totals div {
+            padding: 10px 0 10px 0;
+        }
+
+        .total {
+            text-align: right;
+        }
+
+        .total .title {
+            display: inline-block;
+            text-transform: uppercase;
+            float: left;
+        }
+
+        #totalHTVA, #amountTVA {
+            border-bottom: 1px solid #eee;
+        }
+
+        #totalTTC {
+            color: #4901C8;
+            font-weight: bold;
+        }
+
+        #payement {
+            position: absolute;
+            bottom: 10px;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            width: 99%;
+            clear: both;
+            padding: 10px 0;
+        }
+
+        #payement span {
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #4901C8;
+        }
+
+        #payementInfo, #bankInfo {
+            width: 50%;
+            float: left;
+        }
+
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="supplier-info">
-            <strong>{{.Supplier.Name}}</strong><br>
-            {{.Supplier.Address.Street}}<br>
-            {{.Supplier.Address.PostalCode}} {{.Supplier.Address.City}}, {{.Supplier.Address.Country}}<br>
-            {{.Supplier.Email}} | {{.Supplier.Phone}}
-        </div>
-        <div class="logo">
-            <h1 style="margin: 0; color: #205;">FACTURE</h1>
-        </div>
+<div id="header">
+    <h1>FACTURE</h1>
+</div>
+<div id="info">
+    <div><span class="title">NUMERO DE FACTURE</span> {{.InvoiceNumber}}</div>
+    <div><span class="title">DATE  DE FACTURE</span> {{.InvoiceDate}}</div>
+    <div><span class="title">DATE  D'ECHEANCE</span> {{.DueDate}}</div>
+    <div><span class="title">BON DE COMMANDE</span> {{.OrderReference}}</div>
+    <div><span class="title">PERIODE DE FACTURATION</span> {{.PeriodStart}} - {{.PeriodEnd}}</div>
+</div>
+<div id="contact">
+    <div id="supplier">
+        <br/>
+        <span class="name">{{.Supplier.Name}}</span><br/>
+        {{.Supplier.Address.Street}}<br/>
+        {{.Supplier.Address.PostalCode}} {{.Supplier.Address.City}}, {{.Supplier.Address.Country}}<br/>
+        {{.Supplier.CompanyID}}<br/>
+        {{.Supplier.Phone}}<br/>
+        {{.Supplier.Email}}<br/>
     </div>
-
-    <div class="customer-info">
-        <h2>Facturé à</h2>
-        <div>{{.Customer.Name}}</div>
-        {{.Customer.Address.Street}}<br>
-        {{.Customer.Address.PostalCode}} {{.Customer.Address.City}}, {{.Customer.Address.Country}}
+    <div id="customer">
+        A l'attention de:<br/>
+        <span class="name">{{.Customer.Name}}</span><br/>
+        {{.Customer.Address.Street}}<br/>
+        {{.Customer.Address.PostalCode}} {{.Customer.Address.City}}, {{.Customer.Address.Country}}<br/>
+        {{.Customer.CompanyID}}<br/>
     </div>
-
-    <div class="invoice-details">
-        <div>
-            <span class="label">N° Facture</span>
-            <span class="value">{{.InvoiceNumber}}</span>
-        </div>
-        <div>
-            <span class="label">Date d'émission</span>
-            <span class="value">{{.InvoiceDate}}</span>
-        </div>
-        <div>
-            <span class="label">Échéance</span>
-            <span class="value">{{.DueDate}}</span>
-        </div>
-        <div>
-            <span class="label">Période</span>
-            <span class="value">{{.PeriodStart}} au {{.PeriodEnd}}</span>
-        </div>
-    </div>
-
+</div>
+<div id="items">
     <table>
         <thead>
-            <tr>
-                <th>Description</th>
-                <th class="col-hours">Jours</th>
-                <th class="col-rate">Taux journalier</th>
-                <th class="col-total">Total HT</th>
-            </tr>
+        <tr>
+            <th class="col-desc">Désignation</th>
+            <th class="col-rate">P.U. HTVA</th>
+            <th class="col-vat">TVA</th>
+            <th class="col-hours">Quantité</th>
+            <th class="col-total">Montant HTVA</th>
+        </tr>
         </thead>
         <tbody>
-            {{range .Lines}}
-            <tr>
-                <td>{{.Description}}</td>
-                <td class="col-hours">{{printf "%.2f" .Quantity}}</td>
-                <td class="col-rate">{{printf "%.2f" .UnitPrice}} {{$.Currency}}</td>
-                <td class="col-total">{{printf "%.2f" .NetAmount}} {{$.Currency}}</td>
-            </tr>
-            {{end}}
+        {{range .Lines}}
+        <tr>
+            <td class="col-desc">{{.Description}}</td>
+            <td class="col-rate">{{printf "%.2f" .UnitPrice}} {{$.Currency}}</td>
+            <td class="col-vat">21%</td>
+            <td class="col-hours">{{printf "%.2f" .Quantity}}</td>
+            <td class="col-total">{{printf "%.2f" .NetAmount}} {{$.Currency}}</td>
+        </tr>
+        {{end}}
+        {{range .EmptyLines}}
+        <tr>
+            <td class="col-desc"></td>
+            <td class="col-rate"></td>
+            <td class="col-vat"></td>
+            <td class="col-hours"></td>
+            <td class="col-total"></td>
+        </tr>
+        {{end}}
         </tbody>
     </table>
-
-    <div class="totals">
-        <div class="total-line">
-            <span>Total Jours</span>
-            <span>{{printf "%.2f" .TotalHours}} j</span>
+    <div id="totals">
+        <div class="total" id="totalHTVA">
+            <span class="title">Total HTVA</span>{{.Subtotal}} {{.Currency}}
         </div>
-        <div class="total-line">
-            <span>Sous-total HT</span>
-            <span>{{.Subtotal}} {{.Currency}}</span>
+        <div class="total" id="amountTVA">
+            <span class="title">TVA</span> {{.VATAmount}} {{.Currency}}
         </div>
-        <div class="total-line">
-            <span>TVA (21%)</span>
-            <span>{{.VATAmount}} {{.Currency}}</span>
-        </div>
-        <div class="total-line grand-total">
-            <span>TOTAL TTC</span>
-            <span>{{.TotalAmount}} {{.Currency}}</span>
+        <div class="total" id="totalTTC">
+            <span class="title">Total TVAC</span> {{.TotalAmount}} {{.Currency}}
         </div>
     </div>
-
-    <div class="footer">
-        Informations de paiement : IBAN {{.Supplier.IBAN}} | BIC {{.Supplier.BIC}}<br>
-        Numéro d'entreprise : {{.Supplier.CompanyID}}
+</div>
+<div id="payement">
+    <div id="bankInfo">
+        <span>IBAN: </span> {{.Supplier.IBAN}}
+        <span>BIC: </span> {{.Supplier.BIC}}
     </div>
+    <div id="paymentInfo">
+        <span>communication: </span>+++002/2026/00218+++
+    </div>
+</div>
+
 </body>
 </html>

@@ -15,9 +15,19 @@ type ChromeRenderer struct {
 	Timeout time.Duration
 }
 
+type LibreOfficeRenderer struct {
+	Timeout time.Duration
+}
+
 func NewChromeRenderer() *ChromeRenderer {
 	return &ChromeRenderer{
 		Timeout: 30 * time.Second,
+	}
+}
+
+func NewLibreOfficeRenderer() *LibreOfficeRenderer {
+	return &LibreOfficeRenderer{
+		Timeout: 60 * time.Second,
 	}
 }
 
@@ -45,6 +55,15 @@ func (r *ChromeRenderer) Convert(htmlPath, pdfPath string) error {
 		"--headless",
 		"--disable-gpu",
 		"--no-sandbox",
+		"--no-pdf-header-footer",
+		"--run-all-compositor-stages-before-draw",
+		"--virtual-time-budget=10000",
+		"--hide-scrollbars",
+		"--disable-breakpad",
+		"--disable-extensions",
+		"--disable-infobars",
+		"--disable-dev-shm-usage",
+		"--window-size=1200,1600",
 		fmt.Sprintf("--print-to-pdf=%s", pdfPath),
 		htmlPath,
 	}
@@ -52,6 +71,28 @@ func (r *ChromeRenderer) Convert(htmlPath, pdfPath string) error {
 	cmd := exec.CommandContext(ctx, cmdPath, args...)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("chrome conversion failed: %w (output: %s)", err, string(output))
+	}
+
+	return nil
+}
+
+func (r *LibreOfficeRenderer) Convert(inputPath, outputDir string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), r.Timeout)
+	defer cancel()
+
+	// Path to soffice.exe
+	cmdPath := `C:\Program Files\LibreOffice\program\soffice.exe`
+
+	args := []string{
+		"--headless",
+		"--convert-to", "pdf",
+		"--outdir", outputDir,
+		inputPath,
+	}
+
+	cmd := exec.CommandContext(ctx, cmdPath, args...)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("libreoffice conversion failed: %w (output: %s)", err, string(output))
 	}
 
 	return nil

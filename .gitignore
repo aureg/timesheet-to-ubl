@@ -21,3 +21,6 @@ vendor/
 *.test
 *.prof
 /mailmap.txt
+billing-*.yaml
+/facture-template-anorys.docx
+/invoice-anorys.html
