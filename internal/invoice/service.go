@@ -82,16 +82,7 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 	taxAmount := s.round(netAmount * (res.VATPercent / 100.0))
 	grossAmount := netAmount + taxAmount
 
-	// Calculate Invoice Label (Description)
-	// Pattern: "Période du 01/03/2026 au 31/03/2026 – Bon de commande n° 4110023514"
-	// or "Période du 01/03/2026 au 31/03/2026"
-	description := fmt.Sprintf("Période du %s au %s",
-		invoice.Period.Start.Format("02/01/2006"),
-		invoice.Period.End.Format("02/01/2006"),
-	)
-	if res.OrderReference != "" {
-		description = fmt.Sprintf("%s – Bon de commande n° %s", description, res.OrderReference)
-	}
+	description := fmt.Sprintf("%s - timesheet pour le mois %s", res.ConsultantName, invoice.Period.Start.Format("01/2006"))
 
 	invoice.Lines = append(invoice.Lines, domain.InvoiceLine{
 		Description: description,

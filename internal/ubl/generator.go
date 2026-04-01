@@ -20,8 +20,8 @@ type Invoice struct {
 	IssueDate                    string                        `xml:"cbc:IssueDate"`
 	DueDate                      string                        `xml:"cbc:DueDate"`
 	InvoiceTypeCode              string                        `xml:"cbc:InvoiceTypeCode"`
-	InvoicePeriod                *InvoicePeriod                `xml:"cac:InvoicePeriod,omitempty"`
 	DocumentCurrencyCode         string                        `xml:"cbc:DocumentCurrencyCode"`
+	InvoicePeriod                *InvoicePeriod                `xml:"cac:InvoicePeriod,omitempty"`
 	OrderReference               *OrderReference               `xml:"cac:OrderReference,omitempty"`
 	AdditionalDocumentReferences []AdditionalDocumentReference `xml:"cac:AdditionalDocumentReference,omitempty"`
 	AccountingSupplierParty      AccountingSupplierParty       `xml:"cac:AccountingSupplierParty"`
