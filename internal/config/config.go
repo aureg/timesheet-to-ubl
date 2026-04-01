@@ -40,6 +40,7 @@ type CustomerConfig struct {
 }
 
 type DefaultConfig struct {
+	ConsultantName   string         `yaml:"consultant_name"`
 	Currency         string         `yaml:"currency"`
 	VATPercent       float64        `yaml:"vat_percent"`
 	HourlyRate       float64        `yaml:"hourly_rate"`
@@ -85,6 +86,7 @@ func LoadConfig(path string) (*BillingConfig, error) {
 }
 
 type ResolvedConfig struct {
+	ConsultantName   string
 	HourlyRate       float64
 	VATPercent       float64
 	PaymentTermsDays int
@@ -108,6 +110,7 @@ func (c *BillingConfig) GetDefaultClientName() string {
 
 func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 	res := ResolvedConfig{
+		ConsultantName:   c.Default.ConsultantName,
 		HourlyRate:       c.Default.HourlyRate,
 		VATPercent:       c.Default.VATPercent,
 		PaymentTermsDays: c.Default.PaymentTermsDays,

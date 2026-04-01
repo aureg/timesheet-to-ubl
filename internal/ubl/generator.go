@@ -321,13 +321,14 @@ func Generate(inv *domain.Invoice, outputPath string) error {
 	}
 
 	for i, line := range inv.Lines {
+		itemName := fmt.Sprintf("%s - timesheet pour le mois %s", inv.ConsultantName, inv.Period.Start.Format("01/2006"))
 		ublInv.InvoiceLines = append(ublInv.InvoiceLines, InvoiceLine{
 			ID:                  fmt.Sprintf("%d", i+1),
 			InvoicedQuantity:    Quantity{Value: fmt.Sprintf("%.2f", line.Quantity), UnitCode: "DAY"},
 			LineExtensionAmount: Money{Value: fmt.Sprintf("%.2f", line.NetAmount), CurrencyID: inv.Currency},
 			Item: Item{
 				Description: line.Description,
-				Name:        line.ProjectCode,
+				Name:        itemName,
 				ClassifiedTaxCategory: ClassifiedTaxCategory{
 					ID:      "S",
 					Percent: fmt.Sprintf("%.2f", line.TaxPercent),

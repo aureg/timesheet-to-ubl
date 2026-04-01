@@ -93,8 +93,7 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 		description = fmt.Sprintf("%s – Bon de commande n° %s", description, res.OrderReference)
 	}
 
-	line := domain.InvoiceLine{
-		ProjectCode: projectCode,
+	invoice.Lines = append(invoice.Lines, domain.InvoiceLine{
 		Description: description,
 		Quantity:    totalDays,
 		UnitPrice:   res.HourlyRate,
@@ -102,13 +101,14 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 		NetAmount:   netAmount,
 		TaxAmount:   taxAmount,
 		GrossAmount: grossAmount,
-	}
-
-	invoice.Lines = append(invoice.Lines, line)
+	})
 	invoice.TotalHours = totalHours
 	invoice.Subtotal = s.round(netAmount)
 	invoice.VATAmount = s.round(taxAmount)
 	invoice.TotalAmount = s.round(grossAmount)
+
+	// Add Consultant Name to Invoice for UBL generation
+	invoice.ConsultantName = res.ConsultantName
 
 	// Party info
 	invoice.Customer = domain.Party{

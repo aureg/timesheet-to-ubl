@@ -9,10 +9,15 @@ import (
 
 func TestGenerate(t *testing.T) {
 	inv := &domain.Invoice{
-		Number:    "INV-2023001",
-		IssueDate: time.Now(),
-		DueDate:   time.Now().AddDate(0, 0, 30),
-		Currency:  "EUR",
+		ConsultantName: "Test Consultant",
+		Number:         "INV-2023001",
+		IssueDate:      time.Now(),
+		Period: domain.Period{
+			Start: time.Date(2023, 3, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2023, 3, 31, 0, 0, 0, 0, time.UTC),
+		},
+		DueDate:  time.Now().AddDate(0, 0, 30),
+		Currency: "EUR",
 		Supplier: domain.Party{
 			Name:      "Supplier Co",
 			CompanyID: "BE0123456789",
@@ -35,7 +40,6 @@ func TestGenerate(t *testing.T) {
 		},
 		Lines: []domain.InvoiceLine{
 			{
-				ProjectCode: "P1",
 				Description: "Consulting",
 				Quantity:    1.0,
 				UnitPrice:   1000.0,
@@ -127,6 +131,12 @@ func TestGenerate(t *testing.T) {
 	// Check StructuredCommunication (PaymentID)
 	if !contains(xmlStr, "<cbc:PaymentID>+++2023/0001/0013+++</cbc:PaymentID>") {
 		t.Errorf("XML missing PaymentID (StructuredCommunication). Got: %s", xmlStr)
+	}
+
+	// Check Consultant Name in Item Name
+	expectedItemName := "<cbc:Name>Test Consultant - timesheet pour le mois 03/2023</cbc:Name>"
+	if !contains(xmlStr, expectedItemName) {
+		t.Errorf("XML missing correct Item Name. Expected %s. Got: %s", expectedItemName, xmlStr)
 	}
 }
 

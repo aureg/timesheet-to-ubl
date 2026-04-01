@@ -40,7 +40,6 @@ type TimesheetEntry struct {
 }
 
 type InvoiceLine struct {
-	ProjectCode string
 	Description string
 	Quantity    float64
 	UnitPrice   float64
@@ -79,4 +78,5 @@ type Invoice struct {
 	StructuredCommunication string
 	InvoiceTemplate         string
 	OutputDir               string
+	ConsultantName          string
 }

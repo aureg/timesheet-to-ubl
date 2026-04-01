@@ -1,4 +1,5 @@
 default:
+  consultant_name: "Geromboux Aurélien"
   currency: EUR
   vat_percent: 21.0
   hourly_rate: 1111.0
