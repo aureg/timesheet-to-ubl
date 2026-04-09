@@ -82,7 +82,10 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 	taxAmount := s.round(netAmount * (res.VATPercent / 100.0))
 	grossAmount := netAmount + taxAmount
 
-	description := fmt.Sprintf("%s - timesheet pour le mois %s", res.ConsultantName, invoice.Period.Start.Format("01/2006"))
+	description := fmt.Sprintf("Période du %s au %s – Bon de commande n° %s",
+		invoice.Period.Start.Format("02/01/2006"),
+		invoice.Period.End.Format("02/01/2006"),
+		res.OrderReference)
 
 	invoice.Lines = append(invoice.Lines, domain.InvoiceLine{
 		Description: description,
@@ -100,6 +103,7 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 
 	// Add Consultant Name to Invoice for UBL generation
 	invoice.ConsultantName = res.ConsultantName
+	invoice.ManagerName = res.ManagerName
 
 	// Party info
 	invoice.Customer = domain.Party{
@@ -130,6 +134,7 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 	invoice.DueDate = maxDate.AddDate(0, 0, res.PaymentTermsDays)
 	invoice.OrderReference = res.OrderReference
 	invoice.InvoiceTemplate = res.InvoiceTemplate
+	invoice.ExcelTemplate = res.ExcelTemplate
 	invoice.OutputDir = res.OutputDir
 
 	return invoice, nil

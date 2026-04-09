@@ -116,7 +116,7 @@ try {
     [GC]::WaitForPendingFinalizers()
 }
 `, absInputPath, absOutputPath)
-	} else if ext == ".xlsx" || ext == ".xls" {
+	} else if ext == ".xlsx" || ext == ".xls" || ext == ".xlsm" {
 		// Excel conversion script
 		psScript = fmt.Sprintf(`
 $excel = New-Object -ComObject Excel.Application
@@ -124,6 +124,10 @@ $excel.Visible = $false
 $excel.DisplayAlerts = $false
 try {
     $wb = $excel.Workbooks.Open("%s")
+    # Set orientation to landscape (2) for all worksheets
+    foreach ($ws in $wb.Worksheets) {
+        $ws.PageSetup.Orientation = 2
+    }
     $wb.ExportAsFixedFormat(0, "%s") # 0 is xlTypePDF
     $wb.Close($false)
 } finally {

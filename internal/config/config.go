@@ -47,6 +47,7 @@ type DefaultConfig struct {
 	PaymentTermsDays int            `yaml:"payment_terms_days"`
 	Supplier         SupplierConfig `yaml:"supplier"`
 	InvoiceTemplate  string         `yaml:"invoice_template"`
+	ExcelTemplate    string         `yaml:"excel_template"`
 	OutputDir        string         `yaml:"output_dir"`
 }
 
@@ -55,7 +56,9 @@ type ClientConfig struct {
 	VATPercent       *float64       `yaml:"vat_percent"`
 	PaymentTermsDays *int           `yaml:"payment_terms_days"`
 	OrderReference   string         `yaml:"order_reference"`
+	ManagerName      string         `yaml:"manager_name"`
 	InvoiceTemplate  string         `yaml:"invoice_template"`
+	ExcelTemplate    string         `yaml:"excel_template"`
 	OutputDir        string         `yaml:"output_dir"`
 }
 
@@ -104,7 +107,9 @@ type ResolvedConfig struct {
 	Supplier         SupplierConfig
 	Customer         CustomerConfig
 	OrderReference   string
+	ManagerName      string
 	InvoiceTemplate  string
+	ExcelTemplate    string
 	OutputDir        string
 }
 
@@ -126,6 +131,7 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 		Currency:         c.Default.Currency,
 		Supplier:         c.Default.Supplier,
 		InvoiceTemplate:  c.Default.InvoiceTemplate,
+		ExcelTemplate:    c.Default.ExcelTemplate,
 		OutputDir:        c.Default.OutputDir,
 	}
 
@@ -152,8 +158,14 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 		if cl.OrderReference != "" {
 			res.OrderReference = cl.OrderReference
 		}
+		if cl.ManagerName != "" {
+			res.ManagerName = cl.ManagerName
+		}
 		if cl.InvoiceTemplate != "" {
 			res.InvoiceTemplate = cl.InvoiceTemplate
+		}
+		if cl.ExcelTemplate != "" {
+			res.ExcelTemplate = cl.ExcelTemplate
 		}
 		if cl.OutputDir != "" {
 			res.OutputDir = cl.OutputDir

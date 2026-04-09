@@ -31,3 +31,4 @@ clients:
     vat_percent: 21.0
     payment_terms_days: 30
     order_reference: "4321012345"
+    manager_name: "Jean Responsable"

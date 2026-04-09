@@ -77,6 +77,8 @@ type Invoice struct {
 	OrderReference          string
 	StructuredCommunication string
 	InvoiceTemplate         string
+	ExcelTemplate           string
 	OutputDir               string
 	ConsultantName          string
+	ManagerName             string
 }

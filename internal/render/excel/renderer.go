@@ -43,7 +43,7 @@ func (r *Renderer) Render(invoice *domain.Invoice, entries []domain.TimesheetEnt
 	periodStart := invoice.Period.Start
 	firstDay := time.Date(periodStart.Year(), periodStart.Month(), 1, 0, 0, 0, 0, periodStart.Location())
 
-	// 2. Fill cell I11
+	// 2. Fill cells
 	// The instructions don't specify the sheet, so we'll try the first one or a default
 	// If the template is Template_TimeSheet_NRB_V9.1.xlsm, it might have a specific sheet name.
 	// But usually, it's the active sheet or the first one.
@@ -52,9 +52,34 @@ func (r *Renderer) Render(invoice *domain.Invoice, entries []domain.TimesheetEnt
 		sheet = "Sheet1"
 	}
 
-	// We set the value as time.Time so Excel can apply its own cell formatting (e.g., "mmmm yyyy")
+	// I11: first day of month (date)
 	if err := f.SetCellValue(sheet, "I11", firstDay); err != nil {
 		return fmt.Errorf("failed to set cell I11: %w", err)
+	}
+
+	// I8: Consultant Name
+	if err := f.SetCellValue(sheet, "I8", invoice.ConsultantName); err != nil {
+		return fmt.Errorf("failed to set cell I8: %w", err)
+	}
+
+	// I9: Supplier Name
+	if err := f.SetCellValue(sheet, "I9", invoice.Supplier.Name); err != nil {
+		return fmt.Errorf("failed to set cell I9: %w", err)
+	}
+
+	// D57: Manager Name
+	if err := f.SetCellValue(sheet, "D57", invoice.ManagerName); err != nil {
+		return fmt.Errorf("failed to set cell D57: %w", err)
+	}
+
+	// R10: Hourly Rate
+	// Use the first line's unit price as the hourly rate
+	hourlyRate := 0.0
+	if len(invoice.Lines) > 0 {
+		hourlyRate = invoice.Lines[0].UnitPrice
+	}
+	if err := f.SetCellValue(sheet, "R10", hourlyRate); err != nil {
+		return fmt.Errorf("failed to set cell R10: %w", err)
 	}
 
 	// 2.5 Fill Hours in column D from line 13
