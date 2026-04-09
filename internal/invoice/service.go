@@ -20,10 +20,10 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 		return nil, fmt.Errorf("no timesheet entries provided")
 	}
 
-	// Determine client name from config (ignore excel's client name column as requested)
+	// 1. Determine client name (ignore 'Client' column from Excel if present in config)
 	clientName := cfg.GetDefaultClientName()
 	if clientName == "" && len(entries) > 0 {
-		// Fallback to first entry's client if config has multiple or zero clients
+		// Fallback to client name from the first Excel entry
 		clientName = entries[0].ClientName
 	}
 
@@ -56,12 +56,12 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 		Currency: cfg.Default.Currency,
 	}
 
-	// Calculate Belgian Structured Communication (VCS)
+	// Calculate Belgian structured communication (VCS)
 	// Format: Year (4 digits) + Invoice Number (4 digits) + "00" + Checksum (2 digits)
 	// Example: 2026 0001 00 27
 	year := maxDate.Year()
 	baseStr := fmt.Sprintf("%04d%s00", year, invoiceNumber)
-	// Calculate checksum: base % 97. If 0, checksum is 97.
+	// Checksum calculation: base % 97. If 0, checksum is 97.
 	var baseInt int64
 	fmt.Sscanf(baseStr, "%d", &baseInt)
 	checksum := baseInt % 97
@@ -73,12 +73,11 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 	// Calculate total days (8 hours per day)
 	totalDays := totalHours / 8.0
 
-	// Use default or first project for resolution to get the rate and label
-	// Since there is only one line, we pick the first project code from entries or a generic one
+	// Use the first project for configuration resolution (rate, label)
 	projectCode := entries[0].Project
 	res := cfg.Resolve(clientName, projectCode)
 
-	netAmount := s.round(totalDays * res.HourlyRate)
+	netAmount := s.round(totalDays * res.DailyRate)
 	taxAmount := s.round(netAmount * (res.VATPercent / 100.0))
 	grossAmount := netAmount + taxAmount
 
@@ -90,7 +89,7 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 	invoice.Lines = append(invoice.Lines, domain.InvoiceLine{
 		Description: description,
 		Quantity:    totalDays,
-		UnitPrice:   res.HourlyRate,
+		UnitPrice:   res.DailyRate,
 		TaxPercent:  res.VATPercent,
 		NetAmount:   netAmount,
 		TaxAmount:   taxAmount,

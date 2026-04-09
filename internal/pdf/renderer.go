@@ -37,7 +37,7 @@ func (r *ChromeRenderer) Convert(htmlPath, pdfPath string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.Timeout)
 	defer cancel()
 
-	// Try to find chrome or chromium
+	// Attempt to locate Chrome executable
 	paths := []string{"chrome", "google-chrome", "chromium", "chromium-browser", `C:\Program Files\Google\Chrome\Application\chrome.exe`}
 
 	var cmdPath string
@@ -49,7 +49,7 @@ func (r *ChromeRenderer) Convert(htmlPath, pdfPath string) error {
 	}
 
 	if cmdPath == "" {
-		// Fallback to hardcoded windows path if LookPath failed but file exists
+		// Default path on Windows if not found in PATH
 		cmdPath = `C:\Program Files\Google\Chrome\Application\chrome.exe`
 	}
 
@@ -101,7 +101,7 @@ func (r *MsOfficeRenderer) Convert(inputPath, outputDir string) error {
 
 	var psScript string
 	if ext == ".docx" || ext == ".doc" {
-		// Word conversion script
+		// PowerShell script for Word to PDF conversion via COM object
 		psScript = fmt.Sprintf(`
 $word = New-Object -ComObject Word.Application
 $word.Visible = $false
@@ -117,7 +117,7 @@ try {
 }
 `, absInputPath, absOutputPath)
 	} else if ext == ".xlsx" || ext == ".xls" || ext == ".xlsm" {
-		// Excel conversion script
+		// PowerShell script for Excel to PDF conversion via COM object
 		psScript = fmt.Sprintf(`
 $excel = New-Object -ComObject Excel.Application
 $excel.Visible = $false
@@ -128,7 +128,7 @@ try {
     foreach ($ws in $wb.Worksheets) {
         $ws.PageSetup.Orientation = 2
     }
-    $wb.ExportAsFixedFormat(0, "%s") # 0 is xlTypePDF
+    $wb.ExportAsFixedFormat(0, "%s") # 0 corresponds to xlTypePDF
     $wb.Close($false)
 } finally {
     $excel.Quit()

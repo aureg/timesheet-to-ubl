@@ -13,7 +13,7 @@ func TestCalculate(t *testing.T) {
 		Default: config.DefaultConfig{
 			Currency:         "EUR",
 			VATPercent:       21.0,
-			HourlyRate:       100.0,
+			DailyRate:        100.0,
 			PaymentTermsDays: 30,
 		},
 		Clients: map[string]config.ClientConfig{

@@ -37,16 +37,12 @@ func (r *Renderer) Render(invoice *domain.Invoice, entries []domain.TimesheetEnt
 	}
 	defer f.Close()
 
-	// 1. Get first day of billing month
-	// Based on the instructions: "le premier jour du mois de facturation"
-	// We use the start of the invoice period.
+	// 1. First day of billing month
 	periodStart := invoice.Period.Start
 	firstDay := time.Date(periodStart.Year(), periodStart.Month(), 1, 0, 0, 0, 0, periodStart.Location())
 
-	// 2. Fill cells
-	// The instructions don't specify the sheet, so we'll try the first one or a default
-	// If the template is Template_TimeSheet_NRB_V9.1.xlsm, it might have a specific sheet name.
-	// But usually, it's the active sheet or the first one.
+	// 2. Fill header cells
+	// Get the first sheet of the workbook
 	sheet := f.GetSheetName(0)
 	if sheet == "" {
 		sheet = "Sheet1"
@@ -72,19 +68,17 @@ func (r *Renderer) Render(invoice *domain.Invoice, entries []domain.TimesheetEnt
 		return fmt.Errorf("failed to set cell D57: %w", err)
 	}
 
-	// R10: Hourly Rate
-	// Use the first line's unit price as the hourly rate
-	hourlyRate := 0.0
+	// R10 : Daily Rate (based on the unit price of the first line)
+	dailyRate := 0.0
 	if len(invoice.Lines) > 0 {
-		hourlyRate = invoice.Lines[0].UnitPrice
+		dailyRate = invoice.Lines[0].UnitPrice
 	}
-	if err := f.SetCellValue(sheet, "R10", hourlyRate); err != nil {
+	if err := f.SetCellValue(sheet, "R10", dailyRate); err != nil {
 		return fmt.Errorf("failed to set cell R10: %w", err)
 	}
 
-	// 2.5 Fill Hours in column D from line 13
-	// D13 = day 1, D14 = day 2, ...
-	// Aggregate hours by day
+	// 2.5 Fill daily hours (Column D, starting from row 13)
+	// Aggregate hours by day for the current month
 	hoursByDay := make(map[int]float64)
 	for _, entry := range entries {
 		if entry.Date.Month() == periodStart.Month() && entry.Date.Year() == periodStart.Year() {
@@ -92,7 +86,7 @@ func (r *Renderer) Render(invoice *domain.Invoice, entries []domain.TimesheetEnt
 		}
 	}
 
-	// Find number of days in the month
+	// Number of days in the month
 	lastDayOfMonth := time.Date(periodStart.Year(), periodStart.Month()+1, 0, 0, 0, 0, 0, periodStart.Location()).Day()
 
 	for day := 1; day <= lastDayOfMonth; day++ {
@@ -101,26 +95,14 @@ func (r *Renderer) Render(invoice *domain.Invoice, entries []domain.TimesheetEnt
 		hours := hoursByDay[day]
 
 		if hours > 0 {
-			// Format as d,dd (French format with comma)
-			// We can set it as a string or try to set a number format.
-			// The user said "affiche le total des heures au format d,dd".
-			// If we want Excel to treat it as a number but display with comma, we should use a style.
-			// But for simplicity and based on "d,dd", a string might be what they expect if the template isn't pre-formatted.
-			// However, excelize can set float and we can set a custom number format.
-
-			// Let's try setting the value as float and applying a format if possible,
-			// or just format it as a string with comma.
+			// Write the raw numeric value, Excel will handle formatting via the template
 			if err := f.SetCellValue(sheet, cell, hours); err != nil {
 				return fmt.Errorf("failed to set cell %s: %w", cell, err)
 			}
 		}
 	}
 
-	// 2.7 Force recalculation on load
-	// Some formulas might not be calculated when opening the file.
-	// We tell Excel to recalculate everything.
-	// In excelize v2.10.1, we use SetCalcProps.
-	// We need a pointer to bool, and since BoolPtr is internal, we create one.
+	// 2.7 Force formula recalculation on file open
 	forceRecalc := true
 	if err := f.SetCalcProps(&excelize.CalcPropsOptions{
 		FullCalcOnLoad: &forceRecalc,

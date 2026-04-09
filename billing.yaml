@@ -2,7 +2,7 @@ default:
   consultant_name: "Geromboux Aurélien"
   currency: EUR
   vat_percent: 21.0
-  hourly_rate: 1111.0
+  daily_rate: 1111.0
   payment_terms_days: 30
 
   supplier:
@@ -14,12 +14,12 @@ default:
     bic: "ABCDBEBB"
     address:
       street: "Rue de l'Innovation 1"
-      city: "Bruxelles"
+      city: "Brussels"
       postal_code: "1000"
       country: "BE"
 
 clients:
-  "Mon Client Test":
+  "My Test Client":
     customer:
       name: "Client Test SA"
       company_id: "BE0987654321"
@@ -31,4 +31,4 @@ clients:
     vat_percent: 21.0
     payment_terms_days: 30
     order_reference: "4321012345"
-    manager_name: "Jean Responsable"
+    manager_name: "Jean Manager"

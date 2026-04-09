@@ -43,7 +43,7 @@ type DefaultConfig struct {
 	ConsultantName   string         `yaml:"consultant_name"`
 	Currency         string         `yaml:"currency"`
 	VATPercent       float64        `yaml:"vat_percent"`
-	HourlyRate       float64        `yaml:"hourly_rate"`
+	DailyRate        float64        `yaml:"daily_rate"`
 	PaymentTermsDays int            `yaml:"payment_terms_days"`
 	Supplier         SupplierConfig `yaml:"supplier"`
 	InvoiceTemplate  string         `yaml:"invoice_template"`
@@ -63,7 +63,7 @@ type ClientConfig struct {
 }
 
 type ProjectConfig struct {
-	HourlyRate   *float64 `yaml:"hourly_rate"`
+	DailyRate    *float64 `yaml:"daily_rate"`
 	InvoiceLabel string   `yaml:"invoice_label"`
 }
 
@@ -99,7 +99,7 @@ func LoadConfig(path string) (*BillingConfig, error) {
 
 type ResolvedConfig struct {
 	ConsultantName   string
-	HourlyRate       float64
+	DailyRate        float64
 	VATPercent       float64
 	PaymentTermsDays int
 	InvoiceLabel     string
@@ -125,7 +125,7 @@ func (c *BillingConfig) GetDefaultClientName() string {
 func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 	res := ResolvedConfig{
 		ConsultantName:   c.Default.ConsultantName,
-		HourlyRate:       c.Default.HourlyRate,
+		DailyRate:        c.Default.DailyRate,
 		VATPercent:       c.Default.VATPercent,
 		PaymentTermsDays: c.Default.PaymentTermsDays,
 		Currency:         c.Default.Currency,
@@ -135,11 +135,11 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 		OutputDir:        c.Default.OutputDir,
 	}
 
-	// 1. Client + Project (Nom Client::CODEPROJET)
+	// 1. Client + Project (Client Name::PROJECTCODE)
 	cpKey := fmt.Sprintf("%s::%s", clientName, projectCode)
 	if cp, ok := c.ClientProjects[cpKey]; ok {
-		if cp.HourlyRate != nil {
-			res.HourlyRate = *cp.HourlyRate
+		if cp.DailyRate != nil {
+			res.DailyRate = *cp.DailyRate
 		}
 		if cp.InvoiceLabel != "" {
 			res.InvoiceLabel = cp.InvoiceLabel
@@ -174,8 +174,8 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 
 	// 3. Project
 	if p, ok := c.Projects[projectCode]; ok {
-		if p.HourlyRate != nil && res.HourlyRate == c.Default.HourlyRate {
-			res.HourlyRate = *p.HourlyRate
+		if p.DailyRate != nil && res.DailyRate == c.Default.DailyRate {
+			res.DailyRate = *p.DailyRate
 		}
 		if p.InvoiceLabel != "" && res.InvoiceLabel == "" {
 			res.InvoiceLabel = p.InvoiceLabel
@@ -183,7 +183,7 @@ func (c *BillingConfig) Resolve(clientName, projectCode string) ResolvedConfig {
 	}
 
 	if res.InvoiceLabel == "" {
-		res.InvoiceLabel = fmt.Sprintf("Prestations pour le projet %s", projectCode)
+		res.InvoiceLabel = fmt.Sprintf("Services for project %s", projectCode)
 	}
 
 	return res
@@ -196,7 +196,7 @@ func ResolveTemplatePath(templateName string, resolvedTemplate string) string {
 		path = resolvedTemplate
 	}
 
-	// If still empty, search in .timesheet2ubl
+	// If still empty, search in the user directory .timesheet2ubl
 	if path == "" {
 		home, _ := os.UserHomeDir()
 		baseDir := filepath.Join(home, ".timesheet2ubl")
@@ -211,7 +211,7 @@ func ResolveTemplatePath(templateName string, resolvedTemplate string) string {
 		return ""
 	}
 
-	// If path has an extension and exists, return it
+	// If the path has an extension and exists, return it
 	if filepath.Ext(path) != "" {
 		if _, err := os.Stat(path); err == nil {
 			return path
@@ -222,7 +222,7 @@ func ResolveTemplatePath(templateName string, resolvedTemplate string) string {
 		if _, err := os.Stat(p); err == nil {
 			return p
 		}
-		return path // Return original if not found in home
+		return path // Return original if not found
 	}
 
 	// If no extension, search for .html or .docx in .timesheet2ubl
@@ -233,7 +233,7 @@ func ResolveTemplatePath(templateName string, resolvedTemplate string) string {
 		if _, err := os.Stat(p); err == nil {
 			return p
 		}
-		// Also try current directory
+		// Also try in the current directory
 		if _, err := os.Stat(templateName + ext); err == nil {
 			return templateName + ext
 		}

@@ -28,36 +28,36 @@ type GenerateOptions struct {
 }
 
 func Process(opts GenerateOptions) error {
-	// 1. Load config
+	// 1. Load configuration
 	cfg, err := config.LoadConfig(opts.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
 	}
 
-	// 2. Import Excel
+	// 2. Import Excel data (Timesheet)
 	imp := excel.NewImporter()
 	entries, err := imp.Import(opts.ExcelPath, opts.SheetName)
 	if err != nil {
 		return fmt.Errorf("importing excel: %w", err)
 	}
 
-	// 3. Calculate Invoice
+	// 3. Calculate invoice data
 	svc := invoice.NewService()
 	inv, err := svc.Calculate(entries, cfg, opts.InvoiceNumber)
 	if err != nil {
 		return fmt.Errorf("calculating invoice: %w", err)
 	}
 
-	// 4. Resolve Template Path
+	// 4. Resolve invoice template path
 	templatePath := config.ResolveTemplatePath(opts.TemplatePath, inv.InvoiceTemplate)
 	if templatePath == "" {
 		return fmt.Errorf("could not find invoice template (tried CLI option, config, and default locations)")
 	}
 
-	// 5. Resolve Excel Template Path
+	// 5. Resolve Excel template path (Timesheet)
 	excelTemplatePath := config.ResolveTemplatePath(opts.ExcelTemplatePath, inv.ExcelTemplate)
 
-	// 6. Determine and create output dir
+	// 6. Determine and create output directory
 	outputDir := opts.OutputDir
 	if outputDir == "" {
 		outputDir = inv.OutputDir
@@ -79,7 +79,7 @@ func Process(opts GenerateOptions) error {
 		return fmt.Errorf("creating output dir: %w", err)
 	}
 
-	// 6.5 Copy source Excel to output dir for traceability
+	// 6.5 Copy source Excel file for traceability
 	sourceExcelBase := filepath.Base(opts.ExcelPath)
 	destExcelPath := filepath.Join(outputDir, "source_"+sourceExcelBase)
 	sourceData, err := os.ReadFile(opts.ExcelPath)
@@ -91,7 +91,7 @@ func Process(opts GenerateOptions) error {
 		}
 	}
 
-	// 4. Render Invoice (HTML or Word)
+	// 7. Render invoice (HTML or Word)
 	isWord := strings.ToLower(filepath.Ext(templatePath)) == ".docx"
 	pdfPath := filepath.Join(outputDir, "invoice.pdf")
 	absPdfPath, _ := filepath.Abs(pdfPath)
@@ -133,7 +133,7 @@ func Process(opts GenerateOptions) error {
 		}
 	}
 
-	// 6. Attach Invoice PDF
+	// 8. Attach invoice PDF
 	if data, err := os.ReadFile(pdfPath); err == nil {
 		inv.Attachments = append(inv.Attachments, domain.Attachment{
 			Filename: "invoice.pdf",
@@ -142,7 +142,7 @@ func Process(opts GenerateOptions) error {
 		})
 	}
 
-	// 7. Render Excel Template if provided
+	// 9. Render Excel template (Timesheet) if provided
 	if excelTemplatePath != "" {
 		excelOutPath := filepath.Join(outputDir, "timesheet_filled.xlsx")
 		if strings.HasSuffix(strings.ToLower(excelTemplatePath), ".xlsm") {
@@ -152,11 +152,11 @@ func Process(opts GenerateOptions) error {
 		if err := excelRenderer.Render(inv, entries, excelOutPath); err != nil {
 			fmt.Printf("Warning: Excel template rendering failed: %v\n", err)
 		} else {
-			// Convert filled excel to PDF using MS Office
+			// Convert filled Excel to PDF
 			msoRenderer := pdf.NewMsOfficeRenderer()
 			if err := msoRenderer.Convert(excelOutPath, outputDir); err != nil {
 				fmt.Printf("Warning: Filled Excel to PDF conversion failed (MS Office): %v\n", err)
-				// Fallback: attach filled excel if PDF conversion fails
+				// Fallback: attach filled Excel if PDF conversion fails
 				if data, err := os.ReadFile(excelOutPath); err == nil {
 					inv.Attachments = append(inv.Attachments, domain.Attachment{
 						Filename: filepath.Base(excelOutPath),
@@ -165,7 +165,7 @@ func Process(opts GenerateOptions) error {
 					})
 				}
 			} else {
-				// Find the produced PDF
+				// Retrieve produced PDF
 				base := filepath.Base(excelOutPath)
 				producedName := strings.TrimSuffix(base, filepath.Ext(base)) + ".pdf"
 				producedPath := filepath.Join(outputDir, producedName)
@@ -182,7 +182,7 @@ func Process(opts GenerateOptions) error {
 		}
 	}
 
-	// 7. Generate UBL
+	// 10. Generate UBL XML file
 	ublPath := filepath.Join(outputDir, "invoice-ubl.xml")
 	if err := ubl.Generate(inv, ublPath); err != nil {
 		return fmt.Errorf("generating ubl: %w", err)
