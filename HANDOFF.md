@@ -1,173 +1,153 @@
-# Dossier de Passation - ublcli
+# Handoff Document - ublcli
 
-Ce document contient les instructions et informations nécessaires pour continuer le développement du projet `ublcli` sur un autre ordinateur ou avec une autre IA.
+This document contains instructions and information necessary to continue the development of the `ublcli` project on
+another computer or with another IA.
 
-## Présentation du projet
-`ublcli` est un outil en Go (v1.26+) permettant de générer des factures conformes au standard UBL XML, ainsi que des rendus HTML et PDF, à partir d'un relevé de prestations journalières au format Excel.
+## Project Overview
 
-### Fonctionnalités principales :
-- **Import Excel** : Lecture flexible (dates FR/EN/Numériques, nombres avec virgules ou points).
-- **Logique métier** : Agrégation des prestations par projet, calcul des totaux HT/TVA/TTC.
-- **Enrichissement par Config** : Système de résolution de configuration par priorités (Client+Projet > Client > Projet > Défaut) chargé via YAML.
-- **Rendu Multi-format** : Génération de HTML (via `html/template`) ou Word (via placeholders `{{Key}}`), conversion PDF
-  via Chrome (HTML) ou LibreOffice (Excel/Word), et UBL XML.
-- **Double Interface** : Mode CLI standard et mode TUI interactive (Bubble Tea).
+`ublcli` is a Go-based tool (v1.26+) designed to generate invoices compliant with the UBL XML standard, along with HTML,
+Word, and PDF renders, starting from a daily activity report (timesheet) in Excel format.
 
-## Architecture technique
-Le projet suit une architecture modulaire et testable :
+### Main Features:
 
-- `cmd/ublcli` : Point d'entrée de l'application.
-- `internal/domain` : Structures de données métier (Invoice, Party, etc.).
-- `internal/config` : Chargement et résolution de la configuration YAML.
-- `internal/excel` : Importateur Excel utilisant `excelize`.
-- `internal/invoice` : Service de calcul des montants et agrégation.
-- `internal/render/htmltmpl` : Générateur de factures HTML via `html/template`.
-- `internal/render/word` : Générateur de factures via templates Word (.docx).
-- `internal/pdf` : Wrapper pour la conversion HTML -> PDF via Chrome.
-- `internal/ubl` : Générateur de XML UBL 2.1.
-- `internal/orchestrator` : Coordination du flux complet de génération.
-- `internal/cli` : Gestion des commandes et drapeaux (flags).
-- `internal/tui` : Interface utilisateur interactive (Bubble Tea).
+- **Excel Import**: Flexible reading (FR/EN/Numeric dates, numbers with commas or dots).
+- **Business Logic**: Aggregation of services by project, calculation of Net/VAT/Total amounts.
+- **Config Enrichment**: Configuration resolution system by priorities (Client+Project > Client > Project > Default)
+  loaded via YAML.
+- **Multi-format Rendering**: Generation of HTML (via `html/template`) or Word (via `{{Key}}` placeholders), and UBL
+  XML.
+- **Excel Template Support**: Filling a specific Excel template (e.g., for timesheet validation) and converting it to
+  PDF.
+- **PDF Conversion**:
+    - HTML -> PDF via Chrome/Chromium.
+    - Word/Excel -> PDF via MS Office (PowerShell COM Interop).
+- **Dual Interface**: Standard CLI mode and interactive TUI (Bubble Tea).
 
-## Environnement de développement
+## Technical Architecture
 
-### Configuration par défaut et Résolution :
+The project follows a modular and testable architecture:
 
-L'application cherche automatiquement son fichier de configuration dans :
-`%userHome%/.timesheet2ubl/config.yaml` (Windows) ou `~/.timesheet2ubl/config.yaml` (Linux/macOS).
-Si ce fichier existe, il est utilisé par défaut en CLI (si `--config` n'est pas fourni) et pré-rempli dans la TUI.
+- `cmd/ublcli`: Main entry point.
+- `internal/domain`: Business data structures (`Invoice`, `Party`, `Attachment`, etc.).
+- `internal/config`: Loading and resolution of YAML configuration.
+- `internal/excel`: Excel importer using `excelize`.
+- `internal/invoice`: Service for amount calculation and aggregation.
+- `internal/render/htmltmpl`: HTML invoice generator.
+- `internal/render/word`: Word template (.docx) invoice generator.
+- `internal/render/excel`: Excel template (.xlsx, .xlsm) filler.
+- `internal/pdf`: Wrappers for PDF conversion (Chrome and MS Office).
+- `internal/ubl`: UBL 2.1 XML generator.
+- `internal/orchestrator`: Coordination of the full generation workflow.
+- `internal/cli`: Command and flag management.
+- `internal/tui`: Interactive user interface.
 
-**Résolution du Template :**
-L'outil résout le template d'une facture selon cet ordre de priorité :
+## Development Environment
 
-1. Option `--template` passée en ligne de commande.
-2. Valeur `invoice_template` définie pour le client dans la configuration YAML.
-3. Valeur `invoice_template` définie dans la section `default` de la configuration YAML.
-4. Fichier `invoice.html` ou `invoice.docx` présent dans `%userHome%/.timesheet2ubl/`.
+### Default Configuration and Resolution:
 
-Si un nom sans extension est fourni (ex: `my-template`), l'outil cherchera `my-template.html` puis `my-template.docx`
-dans le dossier utilisateur `.timesheet2ubl/` puis dans le dossier courant.
+The application automatically looks for its configuration file in:
+`%userHome%\.timesheet2ubl\config.yaml` (Windows) or `~/.timesheet2ubl\config.yaml` (Linux/macOS).
 
-### Prérequis :
-- **Go 1.26** ou supérieur.
-- **LibreOffice** : Installé dans `C:\Program Files\LibreOffice` (nécessaire pour la conversion Excel/Word -> PDF).
-- **Google Chrome** ou **Chromium** : Installé (pour la conversion HTML -> PDF).
-- Un éditeur compatible Go (JetBrains GoLand recommandé).
+**Template Resolution:**
+The tool resolves the invoice template path in this order of priority:
 
-### Dépendances majeures :
+1. `--template` CLI option.
+2. `invoice_template` value for the client in the YAML config.
+3. `invoice_template` value in the `default` section of the YAML config.
+4. `invoice.html` or `invoice.docx` file in `%userHome%\.timesheet2ubl\`.
 
-- `github.com/nguyenthenguyen/docx` : Manipulation de fichiers Word.
-- `gopkg.in/yaml.v3` : Parsing YAML.
-- `github.com/charmbracelet/bubbletea` : Framework TUI.
-- `github.com/charmbracelet/lipgloss` : Stylisation TUI.
+**Timesheet Template Resolution:**
+Similarly, for the optional Excel timesheet template:
 
-## Installation et Usage
-1. **Initialisation** :
+1. `--excel-template` CLI option.
+2. `excel_template` value for the client in the YAML config.
+3. `excel_template` value in the `default` section.
+4. `.timesheet2ubl/` folder search.
+
+### Prerequisites:
+
+- **Go 1.26** or higher.
+- **Microsoft Office** (Excel/Word): Necessary for Word/Excel to PDF conversion via PowerShell COM.
+- **Google Chrome** or **Chromium**: For HTML to PDF conversion.
+- A Go-compatible editor (JetBrains GoLand recommended).
+
+### Major Dependencies:
+
+- `github.com/nguyenthenguyen/docx`: Word file manipulation.
+- `github.com/xuri/excelize/v2`: Excel file manipulation.
+- `gopkg.in/yaml.v3`: YAML parsing.
+- `github.com/charmbracelet/bubbletea`: TUI framework.
+
+## Installation and Usage
+
+1. **Initialization**:
    ```powershell
    go mod download
    ```
-2. **Compilation** :
+2. **Compilation**:
    ```powershell
    go build -o ublcli.exe ./cmd/ublcli/main.go
    ```
-3. **Exécution CLI** :
+3. **CLI Execution**:
    ```powershell
-   # Utilisation avec template automatique (config ou dossier par défaut)
-   .\ublcli.exe generate --excel data.xlsx --number 0001
+   # Basic usage with default config and template
+   .\ublcli.exe generate --timesheet-in data.xlsx --invoice-number 0001
    
-   # Spécification d'un template précis
-   .\ublcli.exe generate --excel data.xlsx --number 0001 --template my-invoice.docx
+   # Using aliases
+   .\ublcli.exe generate --tsin data.xlsx --inv-num 0001
    
-   # Utilisation d'un nom de template court (cherche .html/.docx dans .timesheet2ubl)
-   .\ublcli.exe generate --excel data.xlsx --number 0001 --template invoice-anorys
+   # Specifying a template
+   .\ublcli.exe generate --tsin data.xlsx --inv-num 0001 --template my-invoice.docx
    ```
-4. **Exécution TUI** :
+4. **TUI Execution**:
    ```powershell
-   .\ublcli.exe
+   .\ublcli.exe tui
    ```
 
-6. **Configuration par défaut** :
-   L'application utilise `%userHome%/.timesheet2ubl/config.yaml` si aucun flag `--config` n'est spécifié.
+## Template Documentation
 
-## Documentation des Templates
+### Common Placeholders (HTML & Word)
 
-L'outil supporte deux types de templates : HTML (`.html`) et Word (`.docx`). Les données de la facture sont injectées
-différemment selon le format.
+| Placeholder         | Description             | Format / Example |
+|:--------------------|:------------------------|:-----------------|
+| `{{InvoiceNumber}}` | Full invoice number     | `2026-0001`      |
+| `{{InvoiceDate}}`   | Issuance date           | `31/03/2026`     |
+| `{{DueDate}}`       | Due date                | `30/04/2026`     |
+| `{{PeriodStart}}`   | Start of service period | `01/03/2026`     |
+| `{{PeriodEnd}}`     | End of service period   | `31/03/2026`     |
+| `{{ClientName}}`    | Client name             | `Client Name`    |
+| `{{TotalHours}}`    | Total hours sum         | `145.50`         |
+| `{{Subtotal}}`      | Total Net amount        | `9457.50`        |
+| `{{VATAmount}}`     | Total VAT amount        | `1986.08`        |
+| `{{TotalAmount}}`   | Total amount Incl. VAT  | `11443.58`       |
+| `{{DailyRate}}`     | Daily rate              | `650.00`         |
+| `{{ManagerName}}`   | Manager Name            | `John Doe`       |
 
-### Placeholders Communs (HTML & Word)
+### Excel Template Specifics (`internal/render/excel`)
 
-Ces valeurs sont disponibles sous forme de chaînes de caractères formatées :
+When an Excel template is used (via `--excel-template`), the following cells are filled:
 
-| Placeholder                   | Description                       | Format / Exemple       |
-|:------------------------------|:----------------------------------|:-----------------------|
-| `{{InvoiceNumber}}`           | Numéro de la facture              | `2026-001`             |
-| `{{InvoiceDate}}`             | Date d'émission                   | `31/03/2026`           |
-| `{{DueDate}}`                 | Date d'échéance                   | `30/04/2026`           |
-| `{{PeriodStart}}`             | Début de la période de prestation | `01/03/2026`           |
-| `{{PeriodEnd}}`               | Fin de la période de prestation   | `31/03/2026`           |
-| `{{ClientName}}`              | Nom du client (config)            | `Nom du Client`        |
-| `{{TotalHours}}`              | Somme totale des heures           | `145.50`               |
-| `{{Subtotal}}`                | Montant total HT                  | `9457.50`              |
-| `{{VATAmount}}`               | Montant total de la TVA           | `1986.08`              |
-| `{{TotalAmount}}`             | Montant total TTC                 | `11443.58`             |
-| `{{Currency}}`                | Devise utilisée                   | `EUR`                  |
-| `{{OrderReference}}`          | Numéro de bon de commande (PO)    | `PO-12345`             |
-| `{{StructuredCommunication}}` | Communication structurée belge    | `+++2026/0001/0027+++` |
-| `{{Now}}`                     | Date et heure de génération       | `31/03/2026 11:45`     |
+- **I8**: Consultant Name
+- **I9**: Supplier Name
+- **I11**: First day of the billing month
+- **D57**: Manager Name (from config)
+- **R10**: Daily Rate
+- **Column D (from row 13)**: Hours per day (D13 = Day 1, D14 = Day 2, etc.)
 
-### Spécificités du Template HTML (Go `html/template`)
+The resulting file is converted to PDF in Landscape mode and attached to the UBL.
 
-En plus des placeholders ci-dessus, le moteur Go expose les structures de données complètes du domaine. Vous pouvez
-utiliser des boucles et des accès aux propriétés imbriquées.
+## Key Points for Future Development
 
-**Objets disponibles :**
+1. **Daily Rate**: The parameter is now `daily_rate` in YAML and `DailyRate` in the code (replacing the old HourlyRate).
+2. **PDF Conversion**: The MS Office renderer uses a PowerShell script to control Excel/Word via COM. It forces
+   Landscape orientation for Excel.
+3. **UBL Attachments**: The `invoice.pdf` is attached first, followed by `timesheet.pdf` (if generated).
+4. **Traceability**: The source Excel file is always copied to the output directory as `source_<filename>`.
+5. **Language**: All comments, logs, and TUI labels must remain in English.
 
-- `{{.Supplier}}` : Objet `Party` du fournisseur (Name, CompanyID, Email, Phone, IBAN, BIC, Address).
-- `{{.Customer}}` : Objet `Party` du client (Name, CompanyID, Email, Phone, Address).
-- `{{.Lines}}` : Liste des lignes de facture (`InvoiceLine`).
+## Future Improvements
 
-**Exemple de boucle sur les lignes :**
-
-```html
-{{range .Lines}}
-<tr>
-   <td>{{.Description}}</td>
-   <td>{{printf "%.2f" .Quantity}}</td>
-   <td>{{printf "%.2f" .UnitPrice}}</td>
-   <td>{{printf "%.2f" .NetAmount}}</td>
-</tr>
-{{end}}
-```
-
-### Spécificités du Template Word (`.docx`)
-
-Le support Word utilise un remplacement de texte simple. Les données complexes sont pré-formatées en chaînes de
-caractères.
-
-**Placeholders additionnels :**
-
-- `{{SupplierName}}` : Nom du fournisseur.
-- `{{CustomerName}}` : Nom du client.
-- `{{Lines}}` : Un résumé textuel multi-lignes de toutes les prestations (Description, Quantité, Prix unitaire, Total).
-
-*Note : Pour le format Word, les boucles dans les tableaux ne sont pas encore supportées. Le placeholder `{{Lines}}`
-insère un bloc de texte brut récapitulatif.*
-
-## Points de vigilance pour l'IA suivante
-1. **Formats de Date/Heure** : L'importateur Excel dans `internal/excel/importer.go` supporte de nombreux formats (`DD/MM/YYYY`, `MM-DD-YY`, etc.) et gère les virgules comme séparateurs décimaux.
-2. **Résolution de Configuration** : Si une valeur est manquante dans une section spécifique du YAML, elle remonte vers la valeur par défaut. Voir `internal/config/config.go`.
-3. **Gestion du Client** : Le nom du client est prioritairement tiré du fichier de configuration. La colonne "Nom du client" de l'Excel est désormais optionnelle.
-4. **PDF via Chrome & LibreOffice** :
-   - La conversion HTML -> PDF utilise Chrome.
-   - La conversion Excel/Word -> PDF utilise LibreOffice (`soffice.exe`).
-   - Assurez-vous que les chemins dans `internal/pdf/renderer.go` correspondent à votre installation.
-5. **Tests** : Les tests unitaires sont cruciaux pour valider la logique de calcul. Exécuter :
-   ```powershell
-   go test ./internal/...
-   ```
-
-## Améliorations futures possibles
-- Ajouter le support de multiples devises par ligne de facture (actuellement une seule devise par facture).
-- Améliorer le template HTML par défaut pour inclure des logos.
-- Ajouter une option pour uploader directement le XML vers une plateforme de facturation (ex: Peppol).
-- Gérer les erreurs de conversion PDF de manière plus granulaire si Chrome n'est pas présent.
+- Multi-currency support per line.
+- Logo integration in the default HTML template.
+- Direct Peppol/Platform upload.
+- Better error handling when Chrome or Office is missing.
