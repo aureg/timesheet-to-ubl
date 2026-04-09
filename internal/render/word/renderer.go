@@ -42,7 +42,7 @@ func (r *Renderer) Render(invoice *domain.Invoice, outputPath string) error {
 
 	// Prepare data
 	data := map[string]string{
-		"InvoiceNumber":           invoice.Number,
+		"InvoiceNum":              invoice.Number,
 		"InvoiceDate":             invoice.IssueDate.Format("02/01/2006"),
 		"DueDate":                 invoice.DueDate.Format("02/01/2006"),
 		"ClientName":              invoice.Customer.Name,

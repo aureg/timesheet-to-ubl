@@ -18,13 +18,13 @@ import (
 )
 
 type GenerateOptions struct {
-	ExcelPath         string
+	TimesheetInPath   string
 	SheetName         string
 	ConfigPath        string
 	TemplatePath      string
 	ExcelTemplatePath string
 	OutputDir         string
-	InvoiceNumber     string
+	InvoiceNum        string
 }
 
 func Process(opts GenerateOptions) error {
@@ -36,14 +36,14 @@ func Process(opts GenerateOptions) error {
 
 	// 2. Import Excel data (Timesheet)
 	imp := excel.NewImporter()
-	entries, err := imp.Import(opts.ExcelPath, opts.SheetName)
+	entries, err := imp.Import(opts.TimesheetInPath, opts.SheetName)
 	if err != nil {
 		return fmt.Errorf("importing excel: %w", err)
 	}
 
 	// 3. Calculate invoice data
 	svc := invoice.NewService()
-	inv, err := svc.Calculate(entries, cfg, opts.InvoiceNumber)
+	inv, err := svc.Calculate(entries, cfg, opts.InvoiceNum)
 	if err != nil {
 		return fmt.Errorf("calculating invoice: %w", err)
 	}
@@ -66,7 +66,7 @@ func Process(opts GenerateOptions) error {
 		outputDir = "./dist"
 	}
 
-	// Append subfolder INV_{{InvoiceNumber}}_{{ClientName}}
+	// Append subfolder INV_{{InvoiceNum}}_{{ClientName}}
 	subfolderName := fmt.Sprintf("INV_%s_%s", inv.Number, inv.Customer.Name)
 	// Sanitize subfolder name (remove characters that are invalid in file paths)
 	subfolderName = strings.ReplaceAll(subfolderName, " ", "_")
@@ -80,9 +80,9 @@ func Process(opts GenerateOptions) error {
 	}
 
 	// 6.5 Copy source Excel file for traceability
-	sourceExcelBase := filepath.Base(opts.ExcelPath)
+	sourceExcelBase := filepath.Base(opts.TimesheetInPath)
 	destExcelPath := filepath.Join(outputDir, "source_"+sourceExcelBase)
-	sourceData, err := os.ReadFile(opts.ExcelPath)
+	sourceData, err := os.ReadFile(opts.TimesheetInPath)
 	if err != nil {
 		fmt.Printf("Warning: Could not read source Excel for copying: %v\n", err)
 	} else {
