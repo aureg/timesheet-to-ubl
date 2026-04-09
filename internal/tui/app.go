@@ -28,12 +28,13 @@ const (
 	configIdx
 	templateIdx
 	outputIdx
+	excelTemplateIdx
 	numberIdx
 )
 
 func NewModel() *model {
 	m := &model{
-		inputs: make([]textinput.Model, 6),
+		inputs: make([]textinput.Model, 7),
 	}
 
 	var t textinput.Model
@@ -59,6 +60,8 @@ func NewModel() *model {
 		case outputIdx:
 			t.Placeholder = "Dossier de sortie (ex: ./dist)"
 			t.SetValue("./dist")
+		case excelTemplateIdx:
+			t.Placeholder = "Template Excel (.xlsx, .xlsm). Optionnel."
 		case numberIdx:
 			t.Placeholder = "Numéro de facture (4 chiffres, ex: 0001)"
 			t.CharLimit = 4
@@ -145,12 +148,13 @@ type generateDoneMsg struct {
 func (m *model) generateCmd() tea.Cmd {
 	return func() tea.Msg {
 		opts := orchestrator.GenerateOptions{
-			ExcelPath:     m.inputs[excelIdx].Value(),
-			SheetName:     m.inputs[sheetIdx].Value(),
-			ConfigPath:    m.inputs[configIdx].Value(),
-			TemplatePath:  m.inputs[templateIdx].Value(),
-			OutputDir:     m.inputs[outputIdx].Value(),
-			InvoiceNumber: m.inputs[numberIdx].Value(),
+			ExcelPath:         m.inputs[excelIdx].Value(),
+			SheetName:         m.inputs[sheetIdx].Value(),
+			ConfigPath:        m.inputs[configIdx].Value(),
+			TemplatePath:      m.inputs[templateIdx].Value(),
+			ExcelTemplatePath: m.inputs[excelTemplateIdx].Value(),
+			OutputDir:         m.inputs[outputIdx].Value(),
+			InvoiceNumber:     m.inputs[numberIdx].Value(),
 		}
 
 		if len(opts.InvoiceNumber) != 4 {
@@ -190,6 +194,7 @@ func (m *model) inputLabel(i int) string {
 		"Fichier de configuration (YAML)",
 		"Template HTML",
 		"Dossier de sortie",
+		"Template Excel (Optionnel)",
 		"Numéro de facture (4 chiffres)",
 	}
 	style := lipgloss.NewStyle()

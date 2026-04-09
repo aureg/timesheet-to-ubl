@@ -2,6 +2,8 @@ package word
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,7 +23,16 @@ func NewRenderer(templatePath string) *Renderer {
 }
 
 func (r *Renderer) Render(invoice *domain.Invoice, outputPath string) error {
-	rDoc, err := docx.ReadDocxFile(r.templatePath)
+	absPath, _ := filepath.Abs(r.templatePath)
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to access docx template '%s' (absolute path: %s): %w", r.templatePath, absPath, err)
+	}
+	if info.IsDir() {
+		return fmt.Errorf("docx template path is a directory, not a file: '%s' (absolute path: %s)", r.templatePath, absPath)
+	}
+
+	rDoc, err := docx.ReadDocxFile(absPath)
 	if err != nil {
 		return fmt.Errorf("failed to read docx template: %w", err)
 	}

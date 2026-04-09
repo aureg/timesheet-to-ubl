@@ -72,7 +72,16 @@ type BillingConfig struct {
 }
 
 func LoadConfig(path string) (*BillingConfig, error) {
-	data, err := os.ReadFile(path)
+	absPath, _ := filepath.Abs(path)
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access config file '%s' (absolute path: %s): %w", path, absPath, err)
+	}
+	if info.IsDir() {
+		return nil, fmt.Errorf("config path is a directory, not a file: '%s' (absolute path: %s)", path, absPath)
+	}
+
+	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}

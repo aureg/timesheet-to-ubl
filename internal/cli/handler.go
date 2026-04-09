@@ -45,6 +45,7 @@ func handleGenerate() {
 	defaultConfigPath, _ := config.GetDefaultConfigPath()
 	fs.StringVar(&opts.ConfigPath, "config", defaultConfigPath, "Path to YAML config file")
 	fs.StringVar(&opts.TemplatePath, "template", "", "Path to HTML or Word (.docx) template (or name in .timesheet2ubl/)")
+	fs.StringVar(&opts.ExcelTemplatePath, "excel-template", "", "Path to Excel (.xlsx, .xlsm) template")
 	fs.StringVar(&opts.OutputDir, "out", "", "Output directory (default: ./dist or from config)")
 	fs.StringVar(&opts.InvoiceNumber, "number", "", "Invoice number (4 digits, e.g., 0001)")
 

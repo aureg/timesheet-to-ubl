@@ -11,18 +11,20 @@ import (
 	"ublcli/internal/excel"
 	"ublcli/internal/invoice"
 	"ublcli/internal/pdf"
+	excelrender "ublcli/internal/render/excel"
 	"ublcli/internal/render/htmltmpl"
 	"ublcli/internal/render/word"
 	"ublcli/internal/ubl"
 )
 
 type GenerateOptions struct {
-	ExcelPath     string
-	SheetName     string
-	ConfigPath    string
-	TemplatePath  string
-	OutputDir     string
-	InvoiceNumber string
+	ExcelPath         string
+	SheetName         string
+	ConfigPath        string
+	TemplatePath      string
+	ExcelTemplatePath string
+	OutputDir         string
+	InvoiceNumber     string
 }
 
 func Process(opts GenerateOptions) error {
@@ -87,11 +89,11 @@ func Process(opts GenerateOptions) error {
 			return fmt.Errorf("rendering word: %w", err)
 		}
 
-		// Convert docx to pdf using LibreOffice
-		lo := pdf.NewLibreOfficeRenderer()
+		// Convert docx to pdf using MS Office
+		renderer := pdf.NewMsOfficeRenderer()
 		absDocxPath, _ := filepath.Abs(docxPath)
-		if err := lo.Convert(absDocxPath, outputDir); err != nil {
-			fmt.Printf("Warning: Word to PDF conversion failed (LibreOffice): %v\n", err)
+		if err := renderer.Convert(absDocxPath, outputDir); err != nil {
+			fmt.Printf("Warning: Word to PDF conversion failed (MS Office): %v\n", err)
 		} else {
 			// Find the produced PDF
 			producedPath := filepath.Join(outputDir, "invoice_filled.pdf")
@@ -116,7 +118,28 @@ func Process(opts GenerateOptions) error {
 		}
 	}
 
-	// 5. Attach Invoice PDF
+	// 5. Render Excel Template if provided
+	if opts.ExcelTemplatePath != "" {
+		excelOutPath := filepath.Join(outputDir, "timesheet_filled.xlsx")
+		if strings.HasSuffix(strings.ToLower(opts.ExcelTemplatePath), ".xlsm") {
+			excelOutPath = filepath.Join(outputDir, "timesheet_filled.xlsm")
+		}
+		excelRenderer := excelrender.NewRenderer(opts.ExcelTemplatePath)
+		if err := excelRenderer.Render(inv, entries, excelOutPath); err != nil {
+			fmt.Printf("Warning: Excel template rendering failed: %v\n", err)
+		} else {
+			// Attach filled excel
+			if data, err := os.ReadFile(excelOutPath); err == nil {
+				inv.Attachments = append(inv.Attachments, domain.Attachment{
+					Filename: filepath.Base(excelOutPath),
+					MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+					Content:  data,
+				})
+			}
+		}
+	}
+
+	// 6. Attach Invoice PDF
 	if data, err := os.ReadFile(pdfPath); err == nil {
 		inv.Attachments = append(inv.Attachments, domain.Attachment{
 			Filename: "invoice.pdf",
@@ -125,24 +148,28 @@ func Process(opts GenerateOptions) error {
 		})
 	}
 
-	// 6b. Attach original Excel as PDF using LibreOffice (soffice)
+	// 6b. Attach original Excel as PDF using MS Office
 	absExcelPath, _ := filepath.Abs(opts.ExcelPath)
-	lo := pdf.NewLibreOfficeRenderer()
-	if err := lo.Convert(absExcelPath, outputDir); err != nil {
-		fmt.Printf("Warning: Excel to PDF conversion failed (LibreOffice): %v\n", err)
+	if _, err := os.Stat(absExcelPath); err != nil {
+		fmt.Printf("Warning: Excel file not found for PDF conversion: %v\n", err)
 	} else {
-		// LibreOffice outputs <basename>.pdf in the output dir
-		base := filepath.Base(absExcelPath)
-		producedName := strings.TrimSuffix(base, filepath.Ext(base)) + ".pdf"
-		producedPath := filepath.Join(outputDir, producedName)
-		if data, err := os.ReadFile(producedPath); err == nil {
-			inv.Attachments = append(inv.Attachments, domain.Attachment{
-				Filename: "timesheet.pdf",
-				MimeType: "application/pdf",
-				Content:  data,
-			})
+		msoRenderer := pdf.NewMsOfficeRenderer()
+		if err := msoRenderer.Convert(absExcelPath, outputDir); err != nil {
+			fmt.Printf("Warning: Excel to PDF conversion failed (MS Office): %v\n", err)
 		} else {
-			fmt.Printf("Warning: Could not read produced timesheet PDF: %v\n", err)
+			// MS Office outputs <basename>.pdf in the output dir
+			base := filepath.Base(absExcelPath)
+			producedName := strings.TrimSuffix(base, filepath.Ext(base)) + ".pdf"
+			producedPath := filepath.Join(outputDir, producedName)
+			if data, err := os.ReadFile(producedPath); err == nil {
+				inv.Attachments = append(inv.Attachments, domain.Attachment{
+					Filename: "timesheet.pdf",
+					MimeType: "application/pdf",
+					Content:  data,
+				})
+			} else {
+				fmt.Printf("Warning: Could not read produced timesheet PDF: %v\n", err)
+			}
 		}
 	}
 
