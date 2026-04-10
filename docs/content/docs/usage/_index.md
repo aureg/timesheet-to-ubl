@@ -1,6 +1,6 @@
 ---
 title: Utilisation
-weight: 10
+weight: 5
 next: usage/cli
 ---
 

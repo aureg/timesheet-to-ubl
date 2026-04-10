@@ -1,7 +1,7 @@
 ---
-title: Configuration YAML
-weight: 12
-next: usage/tui
+title: Fichier config.yaml
+weight: 2
+next: configuration/html-invoice-template
 ---
 
 Cette page détaille le fichier `config.yaml`: clés, valeurs possibles, priorités et exemples.

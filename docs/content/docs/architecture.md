@@ -1,6 +1,6 @@
 ---
 title: Architecture
-weight: 20
+weight: 10
 ---
 
 Le projet `ublcli` est conçu de manière modulaire en Go pour faciliter la maintenance et l'ajout de nouveaux formats de

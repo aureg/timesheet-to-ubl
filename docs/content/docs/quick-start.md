@@ -1,6 +1,6 @@
 ---
 title: Quick Start
-weight: 5
+weight: 1
 next: usage
 ---
 
