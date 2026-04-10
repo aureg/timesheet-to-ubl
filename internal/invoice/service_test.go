@@ -13,12 +13,13 @@ func TestCalculate(t *testing.T) {
 		Default: config.DefaultConfig{
 			Currency:         "EUR",
 			VATPercent:       21.0,
-			HourlyRate:       100.0,
+			DailyRate:        100.0,
 			PaymentTermsDays: 30,
 		},
 		Clients: map[string]config.ClientConfig{
 			"Client A": {
-				Customer: config.CustomerConfig{Name: "Client A Legal"},
+				Customer:       config.CustomerConfig{Name: "Client A Legal"},
+				OrderReference: "PO-CLIENT-A",
 			},
 		},
 	}
@@ -45,9 +46,20 @@ func TestCalculate(t *testing.T) {
 	}
 
 	svc := NewService()
-	inv, err := svc.Calculate(entries, cfg)
+	inv, err := svc.Calculate(entries, cfg, "0001")
 	if err != nil {
 		t.Fatalf("Calculate failed: %v", err)
+	}
+
+	if inv.Number != "0001" {
+		t.Errorf("Expected number 0001, got %s", inv.Number)
+	}
+
+	// 2023 0001 00 -> 2023000100 % 97 = 2023000100 - (97 * 20855671) = 2023000100 - 2023000087 = 13
+	// VCS: +++2023/0001/0013+++
+	expectedVCS := "+++2023/0001/0013+++"
+	if inv.StructuredCommunication != expectedVCS {
+		t.Errorf("Expected VCS %s, got %s", expectedVCS, inv.StructuredCommunication)
 	}
 
 	if inv.TotalHours != 10.0 {
@@ -83,9 +95,18 @@ func TestCalculate(t *testing.T) {
 		t.Errorf("Expected start %v, got %v", expectedStart, inv.Period.Start)
 	}
 
-	expectedEnd := time.Date(2023, 1, 3, 0, 0, 0, 0, time.UTC)
+	expectedEnd := time.Date(2023, 1, 31, 0, 0, 0, 0, time.UTC)
 	if !inv.Period.End.Equal(expectedEnd) {
 		t.Errorf("Expected end %v, got %v", expectedEnd, inv.Period.End)
+	}
+
+	expectedDescription := "Période du 01/01/2023 au 31/01/2023 – Bon de commande n° PO-CLIENT-A"
+	if inv.Lines[0].Description != expectedDescription {
+		t.Errorf("Expected description '%s', got '%s'", expectedDescription, inv.Lines[0].Description)
+	}
+
+	if inv.OrderReference != "PO-CLIENT-A" {
+		t.Errorf("Expected OrderReference 'PO-CLIENT-A', got '%s'", inv.OrderReference)
 	}
 }
 
@@ -103,7 +124,7 @@ func TestCalculate_MultipleClientsNoError(t *testing.T) {
 	}
 
 	svc := NewService()
-	inv, err := svc.Calculate(entries, cfg)
+	inv, err := svc.Calculate(entries, cfg, "0001")
 	if err != nil {
 		t.Fatalf("Expected no error for multiple clients from excel, got %v", err)
 	}

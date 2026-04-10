@@ -40,7 +40,6 @@ type TimesheetEntry struct {
 }
 
 type InvoiceLine struct {
-	ProjectCode string
 	Description string
 	Quantity    float64
 	UnitPrice   float64
@@ -62,17 +61,24 @@ type Attachment struct {
 }
 
 type Invoice struct {
-	Number      string
-	IssueDate   time.Time
-	DueDate     time.Time
-	Period      Period
-	Supplier    Party
-	Customer    Party
-	Lines       []InvoiceLine
-	TotalHours  float64
-	Subtotal    float64
-	VATAmount   float64
-	TotalAmount float64
-	Currency    string
-	Attachments []Attachment
+	Number                  string
+	IssueDate               time.Time
+	DueDate                 time.Time
+	Period                  Period
+	Supplier                Party
+	Customer                Party
+	Lines                   []InvoiceLine
+	TotalHours              float64
+	Subtotal                float64
+	VATAmount               float64
+	TotalAmount             float64
+	Currency                string
+	Attachments             []Attachment
+	OrderReference          string
+	StructuredCommunication string
+	InvoiceTemplate         string
+	ExcelTemplate           string
+	OutputDir               string
+	ConsultantName          string
+	ManagerName             string
 }

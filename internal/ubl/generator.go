@@ -5,11 +5,15 @@ import (
 	"encoding/xml"
 	"fmt"
 	"os"
+	"strings"
 	"ublcli/internal/domain"
 )
 
 type Invoice struct {
-	XMLName                      xml.Name                      `xml:"urn:oasis:names:specification:ubl:schema:xsd:Invoice-2 Invoice"`
+	XMLName                      xml.Name                      `xml:"Invoice"`
+	Xmlns                        string                        `xml:"xmlns,attr"`
+	XmlnsCac                     string                        `xml:"xmlns:cac,attr"`
+	XmlnsCbc                     string                        `xml:"xmlns:cbc,attr"`
 	CustomizationID              string                        `xml:"cbc:CustomizationID"`
 	ProfileID                    string                        `xml:"cbc:ProfileID"`
 	ID                           string                        `xml:"cbc:ID"`
@@ -17,13 +21,24 @@ type Invoice struct {
 	DueDate                      string                        `xml:"cbc:DueDate"`
 	InvoiceTypeCode              string                        `xml:"cbc:InvoiceTypeCode"`
 	DocumentCurrencyCode         string                        `xml:"cbc:DocumentCurrencyCode"`
+	InvoicePeriod                *InvoicePeriod                `xml:"cac:InvoicePeriod,omitempty"`
+	OrderReference               *OrderReference               `xml:"cac:OrderReference,omitempty"`
+	AdditionalDocumentReferences []AdditionalDocumentReference `xml:"cac:AdditionalDocumentReference,omitempty"`
 	AccountingSupplierParty      AccountingSupplierParty       `xml:"cac:AccountingSupplierParty"`
 	AccountingCustomerParty      AccountingCustomerParty       `xml:"cac:AccountingCustomerParty"`
-	PaymentMeans                 PaymentMeans                  `xml:"cac:PaymentMeans"`
+	PaymentMeans                 PaymentMeans                  `xml:"cac:PaymentMeans,omitempty"`
 	TaxTotal                     TaxTotal                      `xml:"cac:TaxTotal"`
 	LegalMonetaryTotal           LegalMonetaryTotal            `xml:"cac:LegalMonetaryTotal"`
 	InvoiceLines                 []InvoiceLine                 `xml:"cac:InvoiceLine"`
-	AdditionalDocumentReferences []AdditionalDocumentReference `xml:"cac:AdditionalDocumentReference,omitempty"`
+}
+
+type InvoicePeriod struct {
+	StartDate string `xml:"cbc:StartDate"`
+	EndDate   string `xml:"cbc:EndDate"`
+}
+
+type OrderReference struct {
+	ID string `xml:"cbc:ID"`
 }
 
 type AccountingSupplierParty struct {
@@ -39,7 +54,7 @@ type Party struct {
 	PartyIdentification []PartyIdentification `xml:"cac:PartyIdentification,omitempty"`
 	PartyName           *PartyName            `xml:"cac:PartyName,omitempty"`
 	PostalAddress       Address               `xml:"cac:PostalAddress"`
-	PartyTaxScheme      *PartyTaxScheme       `xml:"cac:PartyTaxScheme,omitempty"`
+	PartyTaxScheme      []PartyTaxScheme      `xml:"cac:PartyTaxScheme,omitempty"`
 	PartyLegalEntity    PartyLegalEntity      `xml:"cac:PartyLegalEntity"`
 	Contact             *Contact              `xml:"cac:Contact,omitempty"`
 }
@@ -83,12 +98,13 @@ type PartyLegalEntity struct {
 }
 
 type Contact struct {
-	ElectronicMail string `xml:"cbc:ElectronicMail,omitempty"`
 	Telephone      string `xml:"cbc:Telephone,omitempty"`
+	ElectronicMail string `xml:"cbc:ElectronicMail,omitempty"`
 }
 
 type PaymentMeans struct {
 	PaymentMeansCode      string           `xml:"cbc:PaymentMeansCode"`
+	PaymentID             string           `xml:"cbc:PaymentID,omitempty"`
 	PayeeFinancialAccount FinancialAccount `xml:"cac:PayeeFinancialAccount"`
 }
 
@@ -97,8 +113,20 @@ type FinancialAccount struct {
 }
 
 type TaxTotal struct {
-	TaxAmount Money `xml:"cbc:TaxAmount"`
-	// Simplified TaxTotal for this exercise
+	TaxAmount Money         `xml:"cbc:TaxAmount"`
+	Subtotal  []TaxSubtotal `xml:"cac:TaxSubtotal"`
+}
+
+type TaxSubtotal struct {
+	TaxableAmount Money       `xml:"cbc:TaxableAmount"`
+	TaxAmount     Money       `xml:"cbc:TaxAmount"`
+	TaxCategory   TaxCategory `xml:"cac:TaxCategory"`
+}
+
+type TaxCategory struct {
+	ID        string    `xml:"cbc:ID"`
+	Percent   string    `xml:"cbc:Percent"`
+	TaxScheme TaxScheme `xml:"cac:TaxScheme"`
 }
 
 type Money struct {
@@ -127,8 +155,15 @@ type Quantity struct {
 }
 
 type Item struct {
-	Description string `xml:"cbc:Description"`
-	Name        string `xml:"cbc:Name"`
+	Description           string                `xml:"cbc:Description"`
+	Name                  string                `xml:"cbc:Name"`
+	ClassifiedTaxCategory ClassifiedTaxCategory `xml:"cac:ClassifiedTaxCategory"`
+}
+
+type ClassifiedTaxCategory struct {
+	ID        string    `xml:"cbc:ID"`
+	Percent   string    `xml:"cbc:Percent"`
+	TaxScheme TaxScheme `xml:"cac:TaxScheme"`
 }
 
 type Price struct {
@@ -151,23 +186,73 @@ type EmbeddedDocumentBinaryObject struct {
 	Filename string `xml:"filename,attr"`
 }
 
+func cleanID(id string) string {
+	var b strings.Builder
+	for _, r := range id {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 func Generate(inv *domain.Invoice, outputPath string) error {
 	ublInv := Invoice{
-		CustomizationID:      "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:poacc:trns:invoice:3",
-		ProfileID:            "urn:fdc:peppol.eu:poacc:bis:invoice:3",
-		ID:                   inv.Number,
-		IssueDate:            inv.IssueDate.Format("2006-01-02"),
+		Xmlns:           "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+		XmlnsCac:        "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+		XmlnsCbc:        "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+		CustomizationID: "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:poacc:trns:invoice:3",
+		ProfileID:       "urn:fdc:peppol.eu:poacc:bis:invoice:3",
+		ID:              inv.Number,
+		IssueDate:       inv.IssueDate.Format("2006-01-02"),
+		InvoicePeriod: &InvoicePeriod{
+			StartDate: inv.Period.Start.Format("2006-01-02"),
+			EndDate:   inv.Period.End.Format("2006-01-02"),
+		},
 		DueDate:              inv.DueDate.Format("2006-01-02"),
 		InvoiceTypeCode:      "380",
 		DocumentCurrencyCode: inv.Currency,
+		OrderReference: func() *OrderReference {
+			if inv.OrderReference != "" {
+				return &OrderReference{ID: inv.OrderReference}
+			}
+			return nil
+		}(),
+		AdditionalDocumentReferences: func() []AdditionalDocumentReference {
+			var refs []AdditionalDocumentReference
+			for _, att := range inv.Attachments {
+				refs = append(refs, AdditionalDocumentReference{
+					ID:               att.Filename,
+					DocumentTypeCode: "916",
+					Attachment: UBLAttachment{
+						EmbeddedDocumentBinaryObject: EmbeddedDocumentBinaryObject{
+							Value:    base64.StdEncoding.EncodeToString(att.Content),
+							MimeCode: att.MimeType,
+							Filename: att.Filename,
+						},
+					},
+				})
+			}
+			return refs
+		}(),
 		AccountingSupplierParty: AccountingSupplierParty{
 			Party: Party{
+				EndpointID: &ID{Value: cleanID(inv.Supplier.CompanyID), SchemeID: "0208"}, // 0208 = Belgium CBE
+				PartyIdentification: []PartyIdentification{
+					{ID: ID{Value: inv.Supplier.CompanyID}},
+				},
 				PartyName: &PartyName{Name: inv.Supplier.Name},
 				PostalAddress: Address{
 					StreetName: inv.Supplier.Address.Street,
 					CityName:   inv.Supplier.Address.City,
 					PostalZone: inv.Supplier.Address.PostalCode,
 					Country:    Country{IdentificationCode: inv.Supplier.Address.Country},
+				},
+				PartyTaxScheme: []PartyTaxScheme{
+					{
+						CompanyID: inv.Supplier.CompanyID,
+						TaxScheme: TaxScheme{ID: "VAT"},
+					},
 				},
 				PartyLegalEntity: PartyLegalEntity{
 					RegistrationName: inv.Supplier.Name,
@@ -181,12 +266,22 @@ func Generate(inv *domain.Invoice, outputPath string) error {
 		},
 		AccountingCustomerParty: AccountingCustomerParty{
 			Party: Party{
+				EndpointID: &ID{Value: cleanID(inv.Customer.CompanyID), SchemeID: "0208"},
+				PartyIdentification: []PartyIdentification{
+					{ID: ID{Value: inv.Customer.CompanyID}},
+				},
 				PartyName: &PartyName{Name: inv.Customer.Name},
 				PostalAddress: Address{
 					StreetName: inv.Customer.Address.Street,
 					CityName:   inv.Customer.Address.City,
 					PostalZone: inv.Customer.Address.PostalCode,
 					Country:    Country{IdentificationCode: inv.Customer.Address.Country},
+				},
+				PartyTaxScheme: []PartyTaxScheme{
+					{
+						CompanyID: inv.Customer.CompanyID,
+						TaxScheme: TaxScheme{ID: "VAT"},
+					},
 				},
 				PartyLegalEntity: PartyLegalEntity{
 					RegistrationName: inv.Customer.Name,
@@ -196,12 +291,26 @@ func Generate(inv *domain.Invoice, outputPath string) error {
 		},
 		PaymentMeans: PaymentMeans{
 			PaymentMeansCode: "30",
+			PaymentID:        inv.StructuredCommunication,
 			PayeeFinancialAccount: FinancialAccount{
 				ID: inv.Supplier.IBAN,
 			},
 		},
 		TaxTotal: TaxTotal{
 			TaxAmount: Money{Value: fmt.Sprintf("%.2f", inv.VATAmount), CurrencyID: inv.Currency},
+			Subtotal: []TaxSubtotal{
+				{
+					TaxableAmount: Money{Value: fmt.Sprintf("%.2f", inv.Subtotal), CurrencyID: inv.Currency},
+					TaxAmount:     Money{Value: fmt.Sprintf("%.2f", inv.VATAmount), CurrencyID: inv.Currency},
+					TaxCategory: TaxCategory{
+						ID:      "S",
+						Percent: fmt.Sprintf("%.2f", inv.Lines[0].TaxPercent), // Assuming same tax for all for now
+						TaxScheme: TaxScheme{
+							ID: "VAT",
+						},
+					},
+				},
+			},
 		},
 		LegalMonetaryTotal: LegalMonetaryTotal{
 			LineExtensionAmount: Money{Value: fmt.Sprintf("%.2f", inv.Subtotal), CurrencyID: inv.Currency},
@@ -212,30 +321,24 @@ func Generate(inv *domain.Invoice, outputPath string) error {
 	}
 
 	for i, line := range inv.Lines {
+		itemName := fmt.Sprintf("%s - timesheet pour le mois %s", inv.ConsultantName, inv.Period.Start.Format("01/2006"))
 		ublInv.InvoiceLines = append(ublInv.InvoiceLines, InvoiceLine{
 			ID:                  fmt.Sprintf("%d", i+1),
 			InvoicedQuantity:    Quantity{Value: fmt.Sprintf("%.2f", line.Quantity), UnitCode: "DAY"},
 			LineExtensionAmount: Money{Value: fmt.Sprintf("%.2f", line.NetAmount), CurrencyID: inv.Currency},
 			Item: Item{
 				Description: line.Description,
-				Name:        line.ProjectCode,
+				Name:        itemName,
+				ClassifiedTaxCategory: ClassifiedTaxCategory{
+					ID:      "S",
+					Percent: fmt.Sprintf("%.2f", line.TaxPercent),
+					TaxScheme: TaxScheme{
+						ID: "VAT",
+					},
+				},
 			},
 			Price: Price{
 				PriceAmount: Money{Value: fmt.Sprintf("%.2f", line.UnitPrice), CurrencyID: inv.Currency},
-			},
-		})
-	}
-
-	for _, att := range inv.Attachments {
-		ublInv.AdditionalDocumentReferences = append(ublInv.AdditionalDocumentReferences, AdditionalDocumentReference{
-			ID:               att.Filename,
-			DocumentTypeCode: "916",
-			Attachment: UBLAttachment{
-				EmbeddedDocumentBinaryObject: EmbeddedDocumentBinaryObject{
-					Value:    base64.StdEncoding.EncodeToString(att.Content),
-					MimeCode: att.MimeType,
-					Filename: att.Filename,
-				},
 			},
 		})
 	}

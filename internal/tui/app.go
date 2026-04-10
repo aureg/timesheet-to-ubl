@@ -2,8 +2,10 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
+	"ublcli/internal/config"
 	"ublcli/internal/orchestrator"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -26,11 +28,13 @@ const (
 	configIdx
 	templateIdx
 	outputIdx
+	excelTemplateIdx
+	numberIdx
 )
 
 func NewModel() *model {
 	m := &model{
-		inputs: make([]textinput.Model, 5),
+		inputs: make([]textinput.Model, 7),
 	}
 
 	var t textinput.Model
@@ -39,18 +43,28 @@ func NewModel() *model {
 
 		switch i {
 		case excelIdx:
-			t.Placeholder = "Chemin vers le fichier Excel (ex: input.xlsx)"
+			t.Placeholder = "Path to Excel file (e.g., input.xlsx)"
 			t.Focus()
 		case sheetIdx:
-			t.Placeholder = "Nom de la feuille (ex: Data)"
+			t.Placeholder = "Sheet name (e.g., Data)"
 			t.SetValue("Data")
 		case configIdx:
-			t.Placeholder = "Chemin vers le fichier Config (ex: billing.yaml)"
+			t.Placeholder = "Path to Config file (e.g., billing.yaml)"
+			if path, err := config.GetDefaultConfigPath(); err == nil {
+				if _, err := os.Stat(path); err == nil {
+					t.SetValue(path)
+				}
+			}
 		case templateIdx:
-			t.Placeholder = "Chemin vers le template HTML (ex: invoice.html)"
+			t.Placeholder = "HTML/Word Template (e.g., invoice, ./tpl.html). Optional if configured."
 		case outputIdx:
-			t.Placeholder = "Dossier de sortie (ex: ./dist)"
+			t.Placeholder = "Output directory (e.g., ./dist)"
 			t.SetValue("./dist")
+		case excelTemplateIdx:
+			t.Placeholder = "Excel Template (.xlsx, .xlsm). Optional."
+		case numberIdx:
+			t.Placeholder = "Invoice number (4 digits, ex: 0001)"
+			t.CharLimit = 4
 		}
 
 		m.inputs[i] = t
@@ -75,7 +89,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if s == "enter" && m.focused == len(m.inputs)-1 {
 				m.generating = true
-				m.status = "Génération en cours..."
+				m.status = "Generating..."
 				return m, m.generateCmd()
 			}
 
@@ -107,10 +121,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.generating = false
 		if msg.err != nil {
 			m.err = msg.err
-			m.status = fmt.Sprintf("Erreur: %v", msg.err)
+			m.status = fmt.Sprintf("Error: %v", msg.err)
 		} else {
 			m.done = true
-			m.status = "Succès ! Les fichiers ont été générés dans " + m.inputs[outputIdx].Value()
+			m.status = "Success! Files generated in " + m.inputs[outputIdx].Value()
 		}
 		return m, nil
 	}
@@ -134,11 +148,17 @@ type generateDoneMsg struct {
 func (m *model) generateCmd() tea.Cmd {
 	return func() tea.Msg {
 		opts := orchestrator.GenerateOptions{
-			ExcelPath:    m.inputs[excelIdx].Value(),
-			SheetName:    m.inputs[sheetIdx].Value(),
-			ConfigPath:   m.inputs[configIdx].Value(),
-			TemplatePath: m.inputs[templateIdx].Value(),
-			OutputDir:    m.inputs[outputIdx].Value(),
+			TimesheetInPath:   m.inputs[excelIdx].Value(),
+			SheetName:         m.inputs[sheetIdx].Value(),
+			ConfigPath:        m.inputs[configIdx].Value(),
+			TemplatePath:      m.inputs[templateIdx].Value(),
+			ExcelTemplatePath: m.inputs[excelTemplateIdx].Value(),
+			OutputDir:         m.inputs[outputIdx].Value(),
+			InvoiceNum:        m.inputs[numberIdx].Value(),
+		}
+
+		if len(opts.InvoiceNum) != 4 {
+			return generateDoneMsg{err: fmt.Errorf("invoice number must be exactly 4 digits")}
 		}
 		err := orchestrator.Process(opts)
 		return generateDoneMsg{err: err}
@@ -148,7 +168,7 @@ func (m *model) generateCmd() tea.Cmd {
 func (m *model) View() string {
 	var b strings.Builder
 
-	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Render("UBLCLI - Générateur de Factures"))
+	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Render("UBLCLI - Invoice Generator"))
 	b.WriteString("\n\n")
 
 	for i := range m.inputs {
@@ -162,18 +182,20 @@ func (m *model) View() string {
 	b.WriteString("\n")
 	b.WriteString(m.status)
 	b.WriteString("\n\n")
-	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("appuyez sur ENTRÉE pour générer • ESC pour quitter"))
+	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("press ENTER to generate • ESC to quit"))
 
 	return b.String()
 }
 
 func (m *model) inputLabel(i int) string {
 	labels := []string{
-		"Fichier Excel",
-		"Nom de la feuille",
-		"Fichier de configuration (YAML)",
-		"Template HTML",
-		"Dossier de sortie",
+		"Timesheet Excel File",
+		"Sheet Name",
+		"Configuration File (YAML)",
+		"HTML Template",
+		"Output Directory",
+		"Excel Template (Optional)",
+		"Invoice Number (4 digits)",
 	}
 	style := lipgloss.NewStyle()
 	if i == m.focused {

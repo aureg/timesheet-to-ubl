@@ -15,15 +15,15 @@ func NewService() *Service {
 	return &Service{}
 }
 
-func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.BillingConfig) (*domain.Invoice, error) {
+func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.BillingConfig, invoiceNumber string) (*domain.Invoice, error) {
 	if len(entries) == 0 {
 		return nil, fmt.Errorf("no timesheet entries provided")
 	}
 
-	// Determine client name from config (ignore excel's client name column as requested)
+	// 1. Determine client name (ignore 'Client' column from Excel if present in config)
 	clientName := cfg.GetDefaultClientName()
 	if clientName == "" && len(entries) > 0 {
-		// Fallback to first entry's client if config has multiple or zero clients
+		// Fallback to client name from the first Excel entry
 		clientName = entries[0].ClientName
 	}
 
@@ -42,44 +42,67 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 		totalHours += e.Hours
 	}
 
+	// Period must start on the 1st of the month and end on the last day of the month
+	periodStart := time.Date(minDate.Year(), minDate.Month(), 1, 0, 0, 0, 0, minDate.Location())
+	periodEnd := time.Date(maxDate.Year(), maxDate.Month()+1, 0, 0, 0, 0, 0, maxDate.Location())
+
 	invoice := &domain.Invoice{
-		Number:    fmt.Sprintf("INV-%s", time.Now().Format("20060102-150405")), // Default number
+		Number:    invoiceNumber,
 		IssueDate: maxDate,
 		Period: domain.Period{
-			Start: minDate,
-			End:   maxDate,
+			Start: periodStart,
+			End:   periodEnd,
 		},
 		Currency: cfg.Default.Currency,
 	}
 
+	// Calculate Belgian structured communication (VCS)
+	// Format: Year (4 digits) + Invoice Number (4 digits) + "00" + Checksum (2 digits)
+	// Example: 2026 0001 00 27
+	year := maxDate.Year()
+	baseStr := fmt.Sprintf("%04d%s00", year, invoiceNumber)
+	// Checksum calculation: base % 97. If 0, checksum is 97.
+	var baseInt int64
+	fmt.Sscanf(baseStr, "%d", &baseInt)
+	checksum := baseInt % 97
+	if checksum == 0 {
+		checksum = 97
+	}
+	invoice.StructuredCommunication = fmt.Sprintf("+++%04d/%s/00%02d+++", year, invoiceNumber, checksum)
+
 	// Calculate total days (8 hours per day)
 	totalDays := totalHours / 8.0
 
-	// Use default or first project for resolution to get the rate and label
-	// Since there is only one line, we pick the first project code from entries or a generic one
+	// Use the first project for configuration resolution (rate, label)
 	projectCode := entries[0].Project
 	res := cfg.Resolve(clientName, projectCode)
 
-	netAmount := s.round(totalDays * res.HourlyRate)
+	netAmount := s.round(totalDays * res.DailyRate)
 	taxAmount := s.round(netAmount * (res.VATPercent / 100.0))
 	grossAmount := netAmount + taxAmount
 
-	line := domain.InvoiceLine{
-		ProjectCode: projectCode,
-		Description: res.InvoiceLabel,
+	description := fmt.Sprintf("Période du %s au %s – Bon de commande n° %s",
+		invoice.Period.Start.Format("02/01/2006"),
+		invoice.Period.End.Format("02/01/2006"),
+		res.OrderReference)
+
+	invoice.Lines = append(invoice.Lines, domain.InvoiceLine{
+		Description: description,
 		Quantity:    totalDays,
-		UnitPrice:   res.HourlyRate,
+		UnitPrice:   res.DailyRate,
 		TaxPercent:  res.VATPercent,
 		NetAmount:   netAmount,
 		TaxAmount:   taxAmount,
 		GrossAmount: grossAmount,
-	}
-
-	invoice.Lines = append(invoice.Lines, line)
+	})
 	invoice.TotalHours = totalHours
 	invoice.Subtotal = s.round(netAmount)
 	invoice.VATAmount = s.round(taxAmount)
 	invoice.TotalAmount = s.round(grossAmount)
+
+	// Add Consultant Name to Invoice for UBL generation
+	invoice.ConsultantName = res.ConsultantName
+	invoice.ManagerName = res.ManagerName
 
 	// Party info
 	invoice.Customer = domain.Party{
@@ -108,6 +131,10 @@ func (s *Service) Calculate(entries []domain.TimesheetEntry, cfg *config.Billing
 	}
 	invoice.Currency = res.Currency
 	invoice.DueDate = maxDate.AddDate(0, 0, res.PaymentTermsDays)
+	invoice.OrderReference = res.OrderReference
+	invoice.InvoiceTemplate = res.InvoiceTemplate
+	invoice.ExcelTemplate = res.ExcelTemplate
+	invoice.OutputDir = res.OutputDir
 
 	return invoice, nil
 }

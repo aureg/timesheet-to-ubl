@@ -2,12 +2,15 @@ package excel
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/xuri/excelize/v2"
 	"ublcli/internal/domain"
+
+	"github.com/xuri/excelize/v2"
 )
 
 type Importer struct{}
@@ -16,8 +19,17 @@ func NewImporter() *Importer {
 	return &Importer{}
 }
 
-func (i *Importer) Import(filepath, sheetName string) ([]domain.TimesheetEntry, error) {
-	f, err := excelize.OpenFile(filepath)
+func (i *Importer) Import(excelPath, sheetName string) ([]domain.TimesheetEntry, error) {
+	absPath, _ := filepath.Abs(excelPath)
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access excel file '%s' (absolute path: %s): %w", excelPath, absPath, err)
+	}
+	if info.IsDir() {
+		return nil, fmt.Errorf("excel path is a directory, not a file: '%s' (absolute path: %s)", excelPath, absPath)
+	}
+
+	f, err := excelize.OpenFile(absPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open excel file: %w", err)
 	}
@@ -90,6 +102,7 @@ func (i *Importer) Import(filepath, sheetName string) ([]domain.TimesheetEntry, 
 		hStr := getVal("H.")
 		if hStr != "" {
 			// Replace comma with dot for float parsing (common in French Excel)
+			hStr = strings.TrimSpace(hStr)
 			hStr = strings.ReplaceAll(hStr, ",", ".")
 			h, err := strconv.ParseFloat(hStr, 64)
 			if err != nil {

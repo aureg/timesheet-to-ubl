@@ -20,3 +20,8 @@ Thumbs.db
 vendor/
 *.test
 *.prof
+/mailmap.txt
+billing-*.yaml
+/facture-template-anorys.docx
+/invoice-anorys.html
+/Template_TimeSheet_NRB_V9.1.xlsm
