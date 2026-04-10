@@ -44,6 +44,7 @@ jobs:
       - name: Build with Hugo
         run: |
           hugo mod get
+          hugo mod get github.com/imfing/hextra
           hugo --minify --baseURL "${{ steps.pages.outputs.base_url }}/"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
