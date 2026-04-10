@@ -2,8 +2,6 @@
 title: Documentation
 ---
 
-Bienvenue dans la documentation de **ublcli**.
-
 Cette section détaille l'utilisation du logiciel et son architecture interne.
 
 - [Utilisation](/docs/usage) : Comment installer et utiliser l'outil au quotidien.
@@ -11,5 +9,6 @@ Cette section détaille l'utilisation du logiciel et son architecture interne.
 
 {{< cards >}}
 {{< card link="usage" title="Utilisation" icon="book-open" >}}
-{{< card link="architecture" title="Architecture" icon="cpu-chip" >}}
+{{< card link="architecture" title="Architecture" icon="book-open" >}}
 {{< /cards >}}
+
