@@ -1,6 +1,6 @@
 baseURL = "https://aureg.github.io/timesheet-to-ubl/"
 title = "ublcli - Timesheet to UBL"
-theme = "hextra"
+# theme = "hextra"
 
 [module]
 [[module.imports]]
