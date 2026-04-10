@@ -3,10 +3,9 @@ title: UBL CLI
 toc: false
 ---
 
-
 Générez des factures UBL 2.1, HTML, Word et PDF à partir de vos feuilles de temps Excel.
 
-## Pourquoi ublcli ?
+## Pourquoi UBL CLI ?
 
 `ublcli` est un outil en Go conçu pour simplifier le processus de facturation pour les prestataires de services. Il
 transforme un simple rapport d'activité Excel en une facture structurée prête à l'envoi.
