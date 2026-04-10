@@ -2,6 +2,13 @@
 title: ublcli - Du temps à la facture UBL
 ---
 
+## Explore
+
+{{< cards >}}
+{{< card link="docs" title="Docs" icon="book-open" >}}
+{{< card link="about" title="About" icon="user" >}}
+{{< /cards >}}
+
 {{< hextra/hero
 title="ublcli"
 subtitle="Générez des factures UBL 2.1, HTML, Word et PDF à partir de vos feuilles de temps Excel."
