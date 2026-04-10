@@ -126,11 +126,18 @@ jobs:
         with:
           hugo-version: 'latest'
           extended: true
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.20'
+          cache-dependency-path: docs/go.mod
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v4
       - name: Build with Hugo
-        run: hugo --minify --baseURL "${{ steps.pages.outputs.base_url }}/"
+        run: |
+          hugo mod get
+          hugo --minify --baseURL "${{ steps.pages.outputs.base_url }}/"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
