@@ -11,5 +11,9 @@ var (
 )
 
 func main() {
-	cli.Run()
+	cli.Run(cli.BuildInfo{
+		Version: version,
+		Commit:  commit,
+		Date:    date,
+	})
 }

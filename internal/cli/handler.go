@@ -10,13 +10,25 @@ import (
 	"ublcli/internal/tui"
 )
 
-func Run() {
+type BuildInfo struct {
+	Version string
+	Commit  string
+	Date    string
+}
+
+func Run(info BuildInfo) {
 	if len(os.Args) < 2 {
 		printUsage()
 		return
 	}
 
 	switch os.Args[1] {
+	case "version":
+		fmt.Printf("Version: %s\n", info.Version)
+		fmt.Printf("Commit: %s\n", info.Commit)
+		fmt.Printf("Date: %s\n", info.Date)
+	case "help":
+		printUsage()
 	case "generate":
 		handleGenerate()
 	case "tui":
@@ -34,6 +46,8 @@ func printUsage() {
 	fmt.Println("Commands:")
 	fmt.Println("  generate  Generate invoice files from Excel")
 	fmt.Println("  tui       Launch terminal user interface")
+	fmt.Println("  version   Print build information")
+	fmt.Println("  help      Display help message")
 }
 
 func handleGenerate() {
