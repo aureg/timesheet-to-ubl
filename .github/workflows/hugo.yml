@@ -2,7 +2,7 @@ name: Deploy Hugo site to Pages
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "develop", "main", "master", "release/*" ]
     paths: [ "docs/**" ]
   workflow_dispatch:
 
@@ -43,6 +43,7 @@ jobs:
         uses: actions/configure-pages@v4
       - name: Build with Hugo
         run: |
+          hugo mod get github.com/imfing/hextra
           hugo mod get
           hugo --minify --baseURL "${{ steps.pages.outputs.base_url }}/"
       - name: Upload artifact
