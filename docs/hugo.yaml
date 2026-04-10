@@ -1,5 +1,5 @@
 # Hugo configuration file
-title: UBL CLI Documentation
+title: UBL CLI
 
 # import hextra as module
 module:
@@ -25,7 +25,7 @@ menu:
       pageRef: /about
       weight: 2
     - name: Contact ↗
-      url: "https://github.com/imfing"
+      url: "https://github.com/anorys/"
       weight: 3
     - name: Search
       weight: 4
@@ -36,11 +36,6 @@ menu:
       url: "https://github.com/aureg/timesheet-to-ubl"
       params:
         icon: github
-    - name: Twitter
-      weight: 6
-      url: "https://twitter.com/"
-      params:
-        icon: x-twitter
 
 params:
   navbar:
@@ -49,8 +44,12 @@ params:
 
   footer:
     displayCopyright: false
-    displayPoweredBy: true
+    displayPoweredBy: false
+
+  theme:
+    displayToggle: false
+
 
   editURL:
     enable: true
-    base: https://github.com/aureg/timesheet-to-ubl/edit/main/docs/content"
+    base: https://github.com/aureg/timesheet-to-ubl/edit/develop/docs/content
