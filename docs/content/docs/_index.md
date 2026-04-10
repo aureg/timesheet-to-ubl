@@ -1,5 +1,6 @@
 ---
 title: Documentation
+next: first-page
 ---
 
 Cette section détaille l'utilisation du logiciel et son architecture interne.

@@ -33,7 +33,7 @@ menu:
         type: search
     - name: GitHub
       weight: 5
-      url: "https://github.com/aureg/timesheet-to-ubl/"
+      url: "https://github.com/aureg/timesheet-to-ubl"
       params:
         icon: github
     - name: Twitter
